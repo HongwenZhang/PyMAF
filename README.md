@@ -8,7 +8,7 @@ Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, 
 
 [Project Page](https://hongwenzhang.github.io/pymaf)
 
-![PyMAF](https://hongwenzhang.github.io/images/pymaf.jpg)
+[![PyMAF](https://hongwenzhang.github.io/images/pymaf.jpg "PyMAF")](https://hongwenzhang.github.io/pymaf)
 
 ## Requirements
 
