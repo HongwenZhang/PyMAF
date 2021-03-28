@@ -71,7 +71,11 @@ Run the demo code.
 python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --vid_file ./flashmob.mp4
 ```
 
-![PyMAF](https://hongwenzhang.github.io/pymaf/files/flashmob.gif)
+<p align="center">
+    <img src="https://hongwenzhang.github.io/pymaf/files/flashmob.gif">
+    <br>
+    <sup>Video clipped from <a href="https://www.youtube.com/watch?v=2DiQUX11YaY" target="_blank"><i>Crazy Uptown Funk Flashmob in Sydney</i></a></sup>
+</p>
 
 ## Evaluation
 
