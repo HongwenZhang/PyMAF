@@ -6,7 +6,7 @@ Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, 
 
 \* Equal contribution
 
-[Project Page](https://hongwenzhang.github.io/pymaf) 		[ArXiv](https://arxiv.org/abs/2103.16507)
+[[Project Page]](https://hongwenzhang.github.io/pymaf)	[[ArXiv]](https://arxiv.org/abs/2103.16507)	[[Paper]](https://arxiv.org/pdf/2103.16507.pdf)
 
 [![PyMAF](https://hongwenzhang.github.io/images/pymaf.jpg "PyMAF")](https://hongwenzhang.github.io/pymaf)
 
