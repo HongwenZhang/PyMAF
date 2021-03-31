@@ -26,12 +26,12 @@ Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, 
 
 ### necessary files
 
-> DensePose UV data
+> mesh_downsampling.npz & DensePose UV data
 
-- Run the following script to fetch DensePose UV data.
+- Run the following script to fetch mesh_downsampling.npz & DensePose UV data from other repositories.
 
 ```
-bash get_densepose_uv.sh
+bash fetch_data.sh
 ```
 > SMPL model files
 
