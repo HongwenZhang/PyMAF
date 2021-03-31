@@ -18,9 +18,11 @@ Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, 
 
 - [PyTorch](https://www.pytorch.org) tested on version 1.1.0
 
-- [Neural Renderer](https://github.com/daniilidis-group/neural_renderer)
+- [Neural Renderer](https://github.com/daniilidis-group/neural_renderer) (visualization in training)
 
-- [opendr](https://gitlab.eecs.umich.edu/ngv-python-modules/opendr#)
+- [opendr](https://gitlab.eecs.umich.edu/ngv-python-modules/opendr#) (visualization in training)
+
+- [pyrender](https://github.com/mmatl/pyrender) (optional for demo)
 
 - other packages listed in `requirements.txt`
 

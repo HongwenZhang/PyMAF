@@ -35,12 +35,11 @@ from skimage.transform import resize
 
 from core.cfgs import cfg, parse_args
 from models import hmr, SMPL, pymaf_net
-from utils.renderer import OpenDRenderer
+from utils.renderer import OpenDRenderer, PyRenderer
 from core import path_config
 from datasets.inference import Inference
 from datasets.data_utils.kp_utils import convert_kps
 from utils.pose_tracker import run_posetracker
-from models.smpl import get_smpl_faces
 from utils.demo_utils import (
     download_youtube_clip,
     convert_crop_cam_to_orig_img,
@@ -114,21 +113,16 @@ def main(args):
             bbox = np.array(bbox)
             tracking_results[track_id] = {'frames': f_id, 'bbox': bbox}
     else:
-        if args.tracking_method == 'pose':
-            if not os.path.isabs(video_file):
-                video_file = os.path.join(os.getcwd(), video_file)
-            tracking_results = run_posetracker(video_file, staf_folder=args.staf_dir, display=args.display)
-        else:
-            # run multi object tracker
-            mot = MPT(
-                device=device,
-                batch_size=args.tracker_batch_size,
-                display=args.display,
-                detector_type=args.detector,
-                output_format='dict',
-                yolo_img_size=args.yolo_img_size,
-            )
-            tracking_results = mot(image_folder)
+        # run multi object tracker
+        mot = MPT(
+            device=device,
+            batch_size=args.tracker_batch_size,
+            display=args.display,
+            detector_type=args.detector,
+            output_format='dict',
+            yolo_img_size=args.yolo_img_size,
+        )
+        tracking_results = mot(image_folder)
 
     # remove tracklets if num_frames is less than MIN_NUM_FRAMES
     for person_id in list(tracking_results.keys()):
@@ -288,8 +282,10 @@ def main(args):
 
     if not args.no_render:
         # ========= Render results as a single video ========= #
-        renderer = OpenDRenderer(resolution=(orig_height, orig_width))
-        # renderer = TaichiRenderer(faces=get_smpl_faces(), v_n=6890, resolution=(orig_width,) * 2, out_h_w=(orig_height, orig_width))
+        if args.use_opendr:
+            renderer = OpenDRenderer(resolution=(orig_height, orig_width))
+        else:
+            renderer = PyRenderer(resolution=(orig_width, orig_height))
 
         output_img_folder = os.path.join(output_path, osp.split(image_folder)[-1] + '_output')
         os.makedirs(output_img_folder, exist_ok=True)
@@ -298,17 +294,12 @@ def main(args):
 
         # prepare results for rendering
         frame_results = prepare_rendering_results(pred_results, num_frames)
-        mesh_color = {k: colorsys.hsv_to_rgb(np.random.rand(), 0.5, 1.0) for k in pred_results.keys()}
 
         image_file_names = sorted([
             os.path.join(image_folder, x)
             for x in os.listdir(image_folder)
             if x.endswith('.png') or x.endswith('.jpg')
         ])
-
-        # image_file_names = image_file_names[:10]
-
-        faces = get_smpl_faces()
 
         if args.regressor == 'hmr':
             color_type = 'pink'
@@ -328,8 +319,8 @@ def main(args):
 
             raw_img = img.copy()
 
-            if args.sideview:
-                side_img = np.zeros_like(img)
+            # if args.sideview:
+            #     side_img = np.zeros_like(img)
             
             if args.empty_bg:
                 empty_img = np.zeros_like(img)
@@ -337,8 +328,6 @@ def main(args):
             for person_id, person_data in frame_results[frame_idx].items():
                 frame_verts = person_data['verts']
                 frame_cam = person_data['cam']
-
-                mc = mesh_color[person_id]
 
                 mesh_filename = None
 
@@ -349,36 +338,30 @@ def main(args):
 
                 if args.empty_bg:
                     img, empty_img = renderer(
-                            frame_verts[None, :, :],
-                            faces,
-                            image=[img, empty_img],
+                            frame_verts[None, :, :] if args.use_opendr else frame_verts,
+                            img=[img, empty_img],
                             cam=frame_cam,
-                            # color=mc,
                             color_type=color_type,
                             mesh_filename=mesh_filename
                         )
                 else:
                     img = renderer(
-                        frame_verts[None, :, :],
-                        faces,
-                        image=img,
+                        frame_verts[None, :, :] if args.use_opendr else frame_verts,
+                        img=img,
                         cam=frame_cam,
-                        # color=mc,
                         color_type=color_type,
                         mesh_filename=mesh_filename
                     )
 
-                if args.sideview:
-                    side_img = renderer(
-                        frame_verts,
-                        faces,
-                        image=side_img,
-                        cam=frame_cam,
-                        # color=mc,
-                        color_type=color_type,
-                        angle=270,
-                        axis=[0,1,0],
-                    )
+                # if args.sideview:
+                #     side_img = renderer(
+                #         frame_verts,
+                #         img=side_img,
+                #         cam=frame_cam,
+                #         color_type=color_type,
+                #         angle=270,
+                #         axis=[0,1,0],
+                #     )
 
             if args.with_raw:
                 img = np.concatenate([raw_img, img], axis=1)
@@ -386,8 +369,8 @@ def main(args):
             if args.empty_bg:
                 img = np.concatenate([img, empty_img], axis=1)
 
-            if args.sideview:
-                img = np.concatenate([img, side_img], axis=1)
+            # if args.sideview:
+            #     img = np.concatenate([img, side_img], axis=1)
 
             # cv2.imwrite(os.path.join(output_img_folder, f'{frame_idx:06d}.png'), img)
             if args.image_based:
@@ -432,8 +415,6 @@ if __name__ == '__main__':
                         help='input image size for yolo detector')
     parser.add_argument('--tracker_batch_size', type=int, default=12,
                         help='batch size of object detector used for bbox tracking')
-    parser.add_argument('--staf_dir', type=str, default='/home/mkocabas/developments/openposetrack',
-                        help='path to directory STAF pose tracking method installed.')
     parser.add_argument('--regressor', type=str, default='pymaf_net',
                         help='Name of the SMPL regressor.')
     parser.add_argument('--cfg_file', type=str, default='configs/pymaf_config.yaml',
@@ -448,12 +429,14 @@ if __name__ == '__main__':
                         help='visualize the results of each step during demo')
     parser.add_argument('--no_render', action='store_true',
                         help='disable final rendering of output video.')
+    parser.add_argument('--use_opendr', action='store_true',
+                        help='Use opendr to render the predicted SMPL instead of pyrender')
     parser.add_argument('--with_raw', action='store_true',
                         help='attach raw image.')
     parser.add_argument('--empty_bg', action='store_true',
                         help='render meshes on empty background.')
-    parser.add_argument('--sideview', action='store_true',
-                        help='render meshes from alternate viewpoint.')
+    # parser.add_argument('--sideview', action='store_true',
+    #                     help='render meshes from alternate viewpoint.')
     parser.add_argument('--image_based', action='store_true',
                         help='image based reconstruction.')
     parser.add_argument('--use_gt', action='store_true',

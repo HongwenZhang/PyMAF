@@ -4,14 +4,18 @@ import torch
 import trimesh
 import numpy as np
 import neural_renderer as nr
-from torchvision.utils import make_grid
-from utils.densepose_methods import DensePoseMethods
 from skimage.transform import resize
+from torchvision.utils import make_grid
 
-# try:
-#     import pyrender
-# except:
-#     pass
+from models.smpl import get_smpl_faces
+from utils.densepose_methods import DensePoseMethods
+
+try:
+    import math
+    import pyrender
+    from pyrender.constants import RenderFlags
+except:
+    pass
 try:
     from opendr.renderer import ColoredRenderer
     from opendr.lighting import LambertianPointLight, SphericalHarmonics
@@ -19,84 +23,140 @@ try:
 except:
     pass
 
-try:
-    pass
-    # import taichi as ti
-    # import taichi_three as t3
-    # ti.init(ti.cuda)
-except:
-    pass
 
 import logging
 logger = logging.getLogger(__name__)
 
+class WeakPerspectiveCamera(pyrender.Camera):
+    def __init__(self,
+                 scale,
+                 translation,
+                 znear=pyrender.camera.DEFAULT_Z_NEAR,
+                 zfar=None,
+                 name=None):
+        super(WeakPerspectiveCamera, self).__init__(
+            znear=znear,
+            zfar=zfar,
+            name=name,
+        )
+        self.scale = scale
+        self.translation = translation
+
+    def get_projection_matrix(self, width=None, height=None):
+        P = np.eye(4)
+        P[0, 0] = self.scale[0]
+        P[1, 1] = self.scale[1]
+        P[0, 3] = self.translation[0] * self.scale[0]
+        P[1, 3] = -self.translation[1] * self.scale[1]
+        P[2, 2] = -1
+        return P
+
+
 class PyRenderer:
-    """
-    Renderer used for visualizing the SMPL model
-    Code adapted from https://github.com/vchoutas/smplify-x
-    """
-    def __init__(self, focal_length=5000, img_res=224, faces=None):
-        self.renderer = pyrender.OffscreenRenderer(viewport_width=img_res,
-                                       viewport_height=img_res,
-                                       point_size=1.0)
-        self.focal_length = focal_length
-        self.camera_center = [img_res // 2, img_res // 2]
-        self.faces = faces
+    def __init__(self, resolution=(224,224), orig_img=False, wireframe=False):
+        self.resolution = resolution
 
-    def visualize_tb(self, vertices, camera_translation, images):
-        vertices = vertices.cpu().numpy()
-        camera_translation = camera_translation.cpu().numpy().copy()
-        images = images.cpu()
-        images_np = np.transpose(images.numpy(), (0,2,3,1))
-        rend_imgs = []
-        for i in range(vertices.shape[0]):
-            rend_img = torch.from_numpy(np.transpose(self.__call__(vertices[i], camera_translation[i], images_np[i]), (2,0,1))).float()
-            rend_imgs.append(images[i])
-            rend_imgs.append(rend_img)
-        rend_imgs = make_grid(rend_imgs, nrow=2)
-        return rend_imgs
+        self.faces = get_smpl_faces()
+        self.orig_img = orig_img
+        self.wireframe = wireframe
+        self.renderer = pyrender.OffscreenRenderer(
+            viewport_width=self.resolution[0],
+            viewport_height=self.resolution[1],
+            point_size=1.0
+        )
 
-    def __call__(self, vertices, camera_translation, image):
+        # set the scene
+        self.scene = pyrender.Scene(bg_color=[0.0, 0.0, 0.0, 0.0], ambient_light=(0.3, 0.3, 0.3))
+
+        light = pyrender.PointLight(color=[1.0, 1.0, 1.0], intensity=1)
+
+        light_pose = np.eye(4)
+        light_pose[:3, 3] = [0, -1, 1]
+        self.scene.add(light, pose=light_pose)
+
+        light_pose[:3, 3] = [0, 1, 1]
+        self.scene.add(light, pose=light_pose)
+
+        light_pose[:3, 3] = [1, 1, 2]
+        self.scene.add(light, pose=light_pose)
+
+        self.colors_dict = {
+            'red': np.array([0.5, 0.2, 0.2]),
+            'pink': np.array([0.7, 0.5, 0.5]),
+            'neutral': np.array([0.7, 0.7, 0.6]),
+            'purple': np.array([0.5, 0.5, 0.7]),
+            'green': np.array([0.5, 0.55, 0.3]),
+            'sky': np.array([0.3, 0.5, 0.55]),
+            'white': np.array([1.0, 0.98, 0.94]),
+        }
+
+    def __call__(self, verts, img=np.zeros((224, 224, 3)), cam=np.array([1, 0, 0]), 
+                angle=None, axis=None, mesh_filename=None, color_type=None, color=[1.0, 1.0, 0.9]):
+
+        mesh = trimesh.Trimesh(vertices=verts, faces=self.faces, process=False)
+
+        Rx = trimesh.transformations.rotation_matrix(math.radians(180), [1, 0, 0])
+        mesh.apply_transform(Rx)
+
+        if mesh_filename is not None:
+            mesh.export(mesh_filename)
+
+        if angle and axis:
+            R = trimesh.transformations.rotation_matrix(math.radians(angle), axis)
+            mesh.apply_transform(R)
+
+        if len(cam) == 4:
+            sx, sy, tx, ty = cam
+        elif len(cam) == 3:
+            sx, tx, ty = cam
+            sy = sx
+
+        camera = WeakPerspectiveCamera(
+            scale=[sx, sy],
+            translation=[tx, ty],
+            zfar=1000.
+        )
+
+        if color_type != None:
+            color = self.colors_dict[color_type]
+
         material = pyrender.MetallicRoughnessMaterial(
-            metallicFactor=0.2,
+            metallicFactor=0.0,
             alphaMode='OPAQUE',
-            baseColorFactor=(0.8, 0.3, 0.3, 1.0))
+            baseColorFactor=(color[0], color[1], color[2], 1.0)
+        )
 
-        camera_translation[0] *= -1.
-
-        mesh = trimesh.Trimesh(vertices, self.faces)
-        rot = trimesh.transformations.rotation_matrix(
-            np.radians(180), [1, 0, 0])
-        mesh.apply_transform(rot)
         mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
 
-        scene = pyrender.Scene(ambient_light=(0.5, 0.5, 0.5))
-        scene.add(mesh, 'mesh')
+        mesh_node = self.scene.add(mesh, 'mesh')
 
         camera_pose = np.eye(4)
-        camera_pose[:3, 3] = camera_translation
-        camera = pyrender.IntrinsicsCamera(fx=self.focal_length, fy=self.focal_length,
-                                           cx=self.camera_center[0], cy=self.camera_center[1])
-        scene.add(camera, pose=camera_pose)
+        cam_node = self.scene.add(camera, pose=camera_pose)
 
-        light = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=1)
-        light_pose = np.eye(4)
+        if self.wireframe:
+            render_flags = RenderFlags.RGBA | RenderFlags.ALL_WIREFRAME
+        else:
+            render_flags = RenderFlags.RGBA
 
-        light_pose[:3, 3] = np.array([0, -1, 1])
-        scene.add(light, pose=light_pose)
+        rgb, _ = self.renderer.render(self.scene, flags=render_flags)
+        valid_mask = (rgb[:, :, -1] > 0)[:, :, np.newaxis]
 
-        light_pose[:3, 3] = np.array([0, 1, 1])
-        scene.add(light, pose=light_pose)
+        
+        image_list = [img] if type(img) is not list else img
 
-        light_pose[:3, 3] = np.array([1, 1, 2])
-        scene.add(light, pose=light_pose)
+        return_img = []
+        for item in image_list:
+            output_img = rgb[:, :, :-1] * valid_mask + (1 - valid_mask) * item
+            image = output_img.astype(np.uint8)
+            return_img.append(image)
 
-        color, rend_depth = self.renderer(scene, flags=pyrender.RenderFlags.RGBA)
-        color = color.astype(np.float32) / 255.0
-        valid_mask = (rend_depth > 0)[:,:,None]
-        output_img = (color[:, :, :3] * valid_mask +
-                  (1 - valid_mask) * image)
-        return output_img
+        if type(img) is not list:
+            return_img = return_img[0]
+
+        self.scene.remove_node(mesh_node)
+        self.scene.remove_node(cam_node)
+
+        return return_img
 
 
 class OpenDRenderer:
@@ -117,6 +177,7 @@ class OpenDRenderer:
             'white': np.array([1.0, 0.98, 0.94]),
         }
         self.renderer = ColoredRenderer()
+        self.faces = get_smpl_faces()
     
     def reset_res(self, resolution):
         self.resolution = (resolution[0] * self.ratio, resolution[1] * self.ratio)
@@ -124,17 +185,17 @@ class OpenDRenderer:
                           [0., self.focal_length, self.resolution[0] / 2.],
                           [0., 0., 1.]])
 
-    def __call__(self, verts, faces, color=None, color_type='white', R=None, mesh_filename=None,
-                image=np.zeros((224, 224, 3)), cam=np.array([1, 0, 0]),
+    def __call__(self, verts, faces=None, color=None, color_type='white', R=None, mesh_filename=None,
+                img=np.zeros((224, 224, 3)), cam=np.array([1, 0, 0]),
                 rgba=False, addlight=True):
         '''Render mesh using OpenDR
         verts: shape - (V, 3)
         faces: shape - (F, 3)
-        image: shape - (224, 224, 3), range - [0, 255] (np.uint8)
+        img: shape - (224, 224, 3), range - [0, 255] (np.uint8)
         axis: rotate along with X/Y/Z axis (by angle)
         R: rotation matrix (used to manipulate verts) shape - [3, 3]
         Return:
-            rendered image: shape - (224, 224, 3), range - [0, 255] (np.uint8)
+            rendered img: shape - (224, 224, 3), range - [0, 255] (np.uint8)
         '''
         ## Create OpenDR renderer
         rn = self.renderer
@@ -143,6 +204,9 @@ class OpenDRenderer:
 
         f = np.array([K[0, 0], K[1, 1]])
         c = np.array([K[0, 2], K[1, 2]])
+        
+        if faces == None:
+            faces = self.faces
         if len(cam) == 4:
             t = np.array([cam[2], cam[3], 2 * K[0, 0] / (w * cam[0] + 1e-9)])
         elif len(cam) == 3:
@@ -152,12 +216,6 @@ class OpenDRenderer:
         rn.frustum = {'near': 1., 'far': 1000., 'width': w, 'height': h}
 
         albedo = np.ones_like(verts)*.9
-
-        # if color is not None:
-        #     if len(color.shape) == 1:
-        #         color = np.ones(verts.shape) * color[None, :]
-        # else:
-        #     color = np.ones_like(verts) * self.colors_dict[color_type][None, :]
 
         if color is not None:
             color0 = np.array(color)
@@ -213,17 +271,14 @@ class OpenDRenderer:
         rendered_image = rn.r
         visibility_image = rn.visibility_image
 
-        if type(image) is not list:
-            image_list = [image]
-        else:
-            image_list = image
-        
+        image_list = [img] if type(img) is not list else img
+
         return_img = []
-        for img in image_list:
+        for item in image_list:
             if self.ratio != 1:
-                img_resized = resize(img, (img.shape[0] * self.ratio, img.shape[1] * self.ratio), anti_aliasing=True)
+                img_resized = resize(item, (item.shape[0] * self.ratio, item.shape[1] * self.ratio), anti_aliasing=True)
             else:
-                img_resized = img / 255.
+                img_resized = item / 255.
 
             try:
                 img_resized[visibility_image != (2**32 - 1)] = rendered_image[visibility_image != (2**32 - 1)]
@@ -240,110 +295,11 @@ class OpenDRenderer:
                 res = img_resized_rgba.astype(np.uint8)
             return_img.append(res)
 
-        if type(image) is not list:
+        if type(img) is not list:
             return_img = return_img[0]
 
         return return_img
 
-class TaichiRenderer:
-    def __init__(self, faces, v_n, resolution=(224, 224), out_h_w=(224, 224), ratio=1):
-        self.resolution = (resolution[1] * ratio, resolution[0] * ratio)
-        self.out_h_w = out_h_w
-        self.ratio = ratio
-        self.focal_length = 5000.
-        self.K = np.array([[self.focal_length, 0., self.resolution[0] / 2.],
-                          [0., self.focal_length, self.resolution[1] / 2.],
-                          [0., 0., 1.]])
-        self.colors_dict = {
-            'red': np.array([0.5, 0.2, 0.2]),
-            'pink': np.array([0.7, 0.5, 0.5]),
-            'neutral': np.array([0.7, 0.7, 0.6]),
-            'purple': np.array([0.5, 0.5, 0.7]),
-            'green': np.array([0.5, 0.55, 0.3]),
-            'sky': np.array([0.3, 0.5, 0.55]),
-            'white': np.array([1.0, 0.98, 0.94]),
-        }
-
-        self.scene = t3.Scene()
-        self.camera = t3.Camera(res=self.resolution)
-        # model = t3.Model(obj=t3.readobj('test.obj'))
-        f_n = len(faces)
-        self.model = t3.Model(f_n=f_n, vi_n=v_n)
-
-        self.light = t3.Light()
-        self.scene.add_light(self.light)
-        self.scene.add_model(self.model)
-        self.scene.add_camera(self.camera)
-        self.scene.init()
-
-        self.model.faces.from_numpy(faces)
-
-    def reset_res(self, resolution):
-        self.resolution = (resolution[1] * self.ratio, resolution[0] * self.ratio)
-        self.K = np.array([[self.focal_length, 0., self.resolution[0] / 2.],
-                          [0., self.focal_length, self.resolution[1] / 2.],
-                          [0., 0., 1.]])
-
-    def __call__(self, verts, faces, color=None, color_type='white', R=None, mesh_filename=None,
-                image=np.zeros((224, 224, 3)), cam=np.array([1, 0, 0]),
-                rgba=False, addlight=True):
-        '''Render mesh using OpenDR
-        verts: shape - (V, 3)
-        faces: shape - (F, 3)
-        image: shape - (224, 224, 3), range - [0, 255] (np.uint8)
-        axis: rotate along with X/Y/Z axis (by angle)
-        R: rotation matrix (used to manipulate verts) shape - [3, 3]
-        Return:
-            rendered image: shape - (224, 224, 3), range - [0, 255] (np.uint8)
-        '''
-        ## Create OpenDR renderer
-        w, h = self.resolution
-        K = self.K
-        verts = verts[0]
-
-        f = np.array([K[0, 0], K[1, 1]])
-        c = np.array([K[0, 2], K[1, 2]])
-        if len(cam) == 4:
-            t = np.array([cam[2], cam[3], 2 * K[0, 0] / (w * cam[0] + 1e-9)])
-        elif len(cam) == 3:
-            t = np.array([cam[1], cam[2], 2 * K[0, 0] / (w * cam[0] + 1e-9)])
-
-        self.model.vi.from_numpy(verts)
-
-        extrinsic = np.zeros((3, 4), dtype=float)
-        rot = np.eye(3, dtype=float)
-        t = -rot @ t
-        extrinsic[:3, :3] = rot
-        extrinsic[:3, 3] = t
-
-        self.camera.set_intrinsic(K[0, 0]*self.ratio, K[0, 0]*self.ratio, w // 2, h // 2)
-        self.camera._init()
-        self.camera.pos.from_numpy(t)
-        self.camera.trans.from_numpy(rot)
-
-        # render the model(s) into image
-        self.scene.render()
-
-        # ti.imwrite(self.camera.img, 'test.jpg')
-        rendered_img = self.camera.img.to_numpy().swapaxes(0, 1)
-
-        rendered_img = (rendered_img * 255).astype(np.uint8)
-        rendered_img = rendered_img[self.out_h_w[1] // 2 - self.out_h_w[0] // 2:self.out_h_w[1] // 2 + self.out_h_w[0] // 2]
-
-        if type(image) is not list:
-            image_list = [image]
-        else:
-            image_list = image
-        
-        return_img = []
-        for img in image_list:
-            img[rendered_img != 0] = rendered_img[rendered_img != 0]
-            return_img.append(img)
-
-        if type(image) is not list:
-            return_img = return_img[0]
-
-        return return_img
 
 #  https://github.com/classner/up/blob/master/up_tools/camera.py
 def rotateY(points, angle):

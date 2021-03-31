@@ -12,6 +12,7 @@ notebooks/output
 # customize
 debug/
 results/
+output/
 rm.sh
 del_checkpoints.sh
 
