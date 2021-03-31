@@ -6,7 +6,7 @@ Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, 
 
 \* Equal contribution
 
-[Project Page](https://hongwenzhang.github.io/pymaf)
+[Project Page](https://hongwenzhang.github.io/pymaf) 		[ArXiv](https://arxiv.org/abs/2103.16507)
 
 [![PyMAF](https://hongwenzhang.github.io/images/pymaf.jpg "PyMAF")](https://hongwenzhang.github.io/pymaf)
 
@@ -39,7 +39,7 @@ bash get_densepose_uv.sh
 
 > Fetch preprocessed data from [SPIN](https://github.com/nkolot/SPIN#fetch-data).
 
-> Download the [pre-trained model](1drv) and put it into the `./data/pretrained_model` directory.
+> Download the [pre-trained model](https://drive.google.com/file/d/1_fvCUcQFx-W2929mHe0D8EZPQZZMPIhm/view?usp=sharing) and put it into the `./data/pretrained_model` directory.
 
 After collecting the above necessary files, the directory structure of `./data` is expected as follows.  
 ```
@@ -94,7 +94,7 @@ python3 eval.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --d
 
 ### COCO Keypoint Localization
 
-1. Download the preprocessed data [coco_2014_val.npz](https://drive.google.com/drive/folders/1R4_Vi4TpCQ26-6_b2PhjTBg-nBxZKjz6?usp=sharing). Put it into the `./data/dataset_extras` directory. 
+1. Download the preprocessed data [coco_2014_val.npz](https://drive.google.com/file/d/1Wx9f5-hCU2sdUkqxbAqc_CfuV15iQXkb/view?usp=sharing). Put it into the `./data/dataset_extras` directory. 
 
 2. Run the COCO evaluation code.
 ```
@@ -122,6 +122,7 @@ If this work is helpful in your research, please cite the following paper.
 @article{pymaf2021,
   title={3D Human Pose and Shape Regression with Pyramidal Mesh Alignment Feedback Loop},
   author={Zhang, Hongwen and Tian, Yating and Zhou, Xinchi and Ouyang, Wanli and Liu, Yebin and Wang, Limin and Sun, Zhenan},
+  journal={arXiv preprint arXiv:2103.16507},
   year={2021}
 }
 ```
