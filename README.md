@@ -39,7 +39,7 @@ bash get_densepose_uv.sh
 
 > Fetch preprocessed data from [SPIN](https://github.com/nkolot/SPIN#fetch-data).
 
-> Download the [pre-trained model](https://drive.google.com/file/d/1_fvCUcQFx-W2929mHe0D8EZPQZZMPIhm/view?usp=sharing) and put it into the `./data/pretrained_model` directory.
+> Download the [pre-trained model](https://drive.google.com/drive/folders/1R4_Vi4TpCQ26-6_b2PhjTBg-nBxZKjz6?usp=sharing) and put it into the `./data/pretrained_model` directory.
 
 After collecting the above necessary files, the directory structure of `./data` is expected as follows.  
 ```
@@ -94,7 +94,7 @@ python3 eval.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --d
 
 ### COCO Keypoint Localization
 
-1. Download the preprocessed data [coco_2014_val.npz](https://drive.google.com/file/d/1Wx9f5-hCU2sdUkqxbAqc_CfuV15iQXkb/view?usp=sharing). Put it into the `./data/dataset_extras` directory. 
+1. Download the preprocessed data [coco_2014_val.npz](https://drive.google.com/drive/folders/1R4_Vi4TpCQ26-6_b2PhjTBg-nBxZKjz6?usp=sharing). Put it into the `./data/dataset_extras` directory. 
 
 2. Run the COCO evaluation code.
 ```
