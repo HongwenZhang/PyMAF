@@ -12,7 +12,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import OrderedDict
-from easydict import EasyDict
 from core.cfgs import cfg
 
 
@@ -111,7 +110,6 @@ class PoseResNet(nn.Module):
     def __init__(self, part_out_dim=25):
         self.inplanes = 64
         extra = cfg.MSRES_MODEL.EXTRA
-        # extra = EasyDict(cfg.MSRES_MODEL.EXTRA)
         self.deconv_with_bias = extra.DECONV_WITH_BIAS
 
         block, layers = resnet_spec[extra.NUM_LAYERS]
