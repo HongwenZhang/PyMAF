@@ -66,6 +66,8 @@ After collecting the above necessary files, the directory structure of `./data` 
 ```
 
 ## Demo
+[UPDATE] You can first give it a try on Google Colab using the notebook we have prepared, which is no need to prepare the environment yourself: 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/11RXLsH9BdoSCwY6G-IX7KgqDxVoImu6K?usp=sharing#scrollTo=Plo2YZZmaDtY)
 
 Run the demo code.
 
