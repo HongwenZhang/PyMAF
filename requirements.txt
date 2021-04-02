@@ -17,6 +17,7 @@ scipy==1.2.2
 tensorboardx
 smplx==0.1.13
 torchgeometry
+git+https://github.com/daniilidis-group/neural_renderer.git
 git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI
 git+https://gitlab.eecs.umich.edu/ngv-python-modules/opendr.git
 git+https://github.com/mkocabas/yolov3-pytorch.git
