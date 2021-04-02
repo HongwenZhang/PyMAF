@@ -18,7 +18,9 @@ Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, 
 
 - [PyTorch](https://www.pytorch.org) tested on version 1.1.0
 
-- [Neural Renderer](https://github.com/daniilidis-group/neural_renderer) (visualization in training)
+- [torchvision](https://www.pytorch.org) tested on version 0.3.0
+
+- [Neural Renderer](https://github.com/daniilidis-group/neural_renderer) (render densepose labels for training)
 
 - [opendr](https://gitlab.eecs.umich.edu/ngv-python-modules/opendr#) (visualization in training)
 
@@ -67,7 +69,7 @@ After collecting the above necessary files, the directory structure of `./data` 
 
 ## Demo
 [UPDATE] You can first give it a try on Google Colab using the notebook we have prepared, which is no need to prepare the environment yourself: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/11RXLsH9BdoSCwY6G-IX7KgqDxVoImu6K?usp=sharing#scrollTo=Plo2YZZmaDtY)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/11RXLsH9BdoSCwY6G-IX7KgqDxVoImu6K?usp=sharing)
 
 Run the demo code.
 
@@ -148,3 +150,4 @@ The code is developed upon the following projects. Many thanks to their contribu
 - [HMR](https://github.com/akanazawa/hmr)
 
 - [pose_resnet](https://github.com/Microsoft/human-pose-estimation.pytorch)
+
