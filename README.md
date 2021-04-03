@@ -68,8 +68,7 @@ After collecting the above necessary files, the directory structure of `./data` 
 ```
 
 ## Demo
-[UPDATE] You can first give it a try on Google Colab using the notebook we have prepared, which is no need to prepare the environment yourself: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/11RXLsH9BdoSCwY6G-IX7KgqDxVoImu6K?usp=sharing)
+[UPDATE] You can first give it a try on Google Colab using the notebook we have prepared, which is no need to prepare the environment yourself: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/11RXLsH9BdoSCwY6G-IX7KgqDxVoImu6K?usp=sharing)
 
 Run the demo code.
 
@@ -116,9 +115,9 @@ The preprocessed labels have the same format as SPIN and can be retrieved from [
 PyMAF is trained on Human3.6M at the first stage and then trained on the mixture of both 2D and 3D datasets at the second stage. Example usage:
 ```
 # training on Human3.6M
-python3 train.py --regressor pymaf_net --single_dataset --misc TRAIN.BATCH_SIZE 64
+CUDA_VISIBLE_DEVICES=0 python3 train.py --regressor pymaf_net --single_dataset --misc TRAIN.BATCH_SIZE 64
 # training on mixed datasets
-python3 train.py --regressor pymaf_net --pretrained_checkpoint path/to/checkpoint_file.pt --misc TRAIN.BATCH_SIZE 64
+CUDA_VISIBLE_DEVICES=0 python3 train.py --regressor pymaf_net --pretrained_checkpoint path/to/checkpoint_file.pt --misc TRAIN.BATCH_SIZE 64
 ```
 Running the above commands will use Human3.6M or mixed datasets for training, respectively. We can monitor the training process by setting up a TensorBoard at the directory `./logs`.
 

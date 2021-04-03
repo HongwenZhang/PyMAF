@@ -74,10 +74,10 @@ class MAF_Extractor(nn.Module):
 
     def reduce_dim(self, feature):
         '''
-        :param feature: list of [BxC_inxHxW] tensors of image features
-        :return: [BxC_outxN] tensor of features extracted at the coordinates
+        Dimension reduction by multi-layer perceptrons
+        :param feature: list of [B, C_s, N] point-wise features before dimension reduction
+        :return: [B, C_p x N] concatantion of point-wise features after dimension reduction
         '''
-
         y = feature
         tmpy = feature
         for i, f in enumerate(self.filters):
@@ -102,11 +102,12 @@ class MAF_Extractor(nn.Module):
 
     def sampling(self, points, im_feat=None, z_feat=None):
         '''
-        Given 2D points, sample the point-wise features for each point.
+        Given 2D points, sample the point-wise features for each point, 
+        the dimension of point-wise features will be reduced from C_s to C_p by MLP.
         Image features should be pre-computed before this call.
-        store all intermediate features.
-        :param points: [B, 3, N] world space coordinates of points
-        :return: [B, Res, N] predictions for each point
+        :param points: [B, N, 2] image coordinates of points
+        :im_feat: [B, C_s, H_s, W_s] spatial feature maps 
+        :return: [B, C_p x N] concatantion of point-wise features after dimension reduction
         '''
         if im_feat is None:
             im_feat = self.im_feat
@@ -123,8 +124,10 @@ class MAF_Extractor(nn.Module):
 
         Args:
             p (tensor): [B, N_m, 3] mesh vertices
-            s_feat (tensor): [B, N_s, H_s, W_s] spatial feature maps
+            s_feat (tensor): [B, C_s, H_s, W_s] spatial feature maps
             cam (tensor): [B, 3] camera
+        Return:
+            mesh_align_feat (tensor): [B, C_p x N_m] mesh-aligned features
         '''
         if cam is None:
             cam = self.cam
