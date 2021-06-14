@@ -1,41 +1,5 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-
-
-def iuvmap_clean(U_uv, V_uv, Index_UV, AnnIndex=None):
-
-    Index_UV_max = torch.argmax(Index_UV, dim=1).float()
-    recon_Index_UV = []
-    for i in range(Index_UV.size(1)):
-        if i == 0:
-            recon_Index_UV_i = torch.min(F.threshold(Index_UV_max + 1, 0.5, 0),
-                                         -F.threshold(-Index_UV_max - 1, -1.5, 0))
-        else:
-            recon_Index_UV_i = torch.min(F.threshold(Index_UV_max, i - 0.5, 0),
-                                         -F.threshold(-Index_UV_max, -i - 0.5, 0)) / float(i)
-        recon_Index_UV.append(recon_Index_UV_i)
-    recon_Index_UV = torch.stack(recon_Index_UV, dim=1)
-
-    if AnnIndex is None:
-        recon_Ann_Index = None
-    else:
-        AnnIndex_max = torch.argmax(AnnIndex, dim=1).float()
-        recon_Ann_Index = []
-        for i in range(AnnIndex.size(1)):
-            if i == 0:
-                recon_Ann_Index_i = torch.min(F.threshold(AnnIndex_max + 1, 0.5, 0),
-                                              -F.threshold(-AnnIndex_max - 1, -1.5, 0))
-            else:
-                recon_Ann_Index_i = torch.min(F.threshold(AnnIndex_max, i - 0.5, 0),
-                                              -F.threshold(-AnnIndex_max, -i - 0.5, 0)) / float(i)
-            recon_Ann_Index.append(recon_Ann_Index_i)
-        recon_Ann_Index = torch.stack(recon_Ann_Index, dim=1)
-
-    recon_U = recon_Index_UV * U_uv
-    recon_V = recon_Index_UV * V_uv
-
-    return recon_U, recon_V, recon_Index_UV, recon_Ann_Index
 
 
 def iuv_map2img(U_uv, V_uv, Index_UV, AnnIndex=None, uv_rois=None, ind_mapping=None):

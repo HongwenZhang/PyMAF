@@ -8,16 +8,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import copy
 import logging
-import random
-
-import cv2
 import numpy as np
-import torch
-from torch.utils.data import Dataset
 
-from core import path_config, constants
+from core import path_config
 from .base_dataset import BaseDataset
 
 logger = logging.getLogger(__name__)

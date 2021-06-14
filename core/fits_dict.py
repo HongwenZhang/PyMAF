@@ -1,12 +1,13 @@
-# This script is borrowed and extended from https://github.com/nkolot/SPIN/blob/master/train/fits_dict.py
-import torch
-import numpy as np
+'''
+This script is borrowed and extended from https://github.com/nkolot/SPIN/blob/master/train/fits_dict.py
+'''
 import os
 import cv2
+import torch
+import numpy as np
 from torchgeometry import angle_axis_to_rotation_matrix, rotation_matrix_to_angle_axis
 
 from core import path_config, constants
-from utils.geometry import rot6d_to_rotmat
 
 import logging
 logger = logging.getLogger(__name__)

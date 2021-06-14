@@ -8,42 +8,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
 import cv2
-
-
-def flip_back(output_flipped, matched_parts):
-    '''
-    ouput_flipped: numpy.ndarray(batch_size, num_joints, height, width)
-    '''
-    assert output_flipped.ndim == 4,\
-        'output_flipped should be [batch_size, num_joints, height, width]'
-
-    output_flipped = output_flipped[:, :, :, ::-1]
-
-    for pair in matched_parts:
-        tmp = output_flipped[:, pair[0], :, :].copy()
-        output_flipped[:, pair[0], :, :] = output_flipped[:, pair[1], :, :]
-        output_flipped[:, pair[1], :, :] = tmp
-
-    return output_flipped
-
-
-def fliplr_joints(joints, joints_vis, width, matched_parts):
-    """
-    flip coords
-    """
-    # Flip horizontal
-    joints[:, 0] = width - joints[:, 0] - 1
-
-    # Change left-right parts
-    for pair in matched_parts:
-        joints[pair[0], :], joints[pair[1], :] = \
-            joints[pair[1], :], joints[pair[0], :].copy()
-        joints_vis[pair[0], :], joints_vis[pair[1], :] = \
-            joints_vis[pair[1], :], joints_vis[pair[0], :].copy()
-
-    return joints*joints_vis, joints_vis
+import numpy as np
 
 
 def transform_preds(coords, center, scale, output_size):
@@ -108,14 +74,3 @@ def get_dir(src_point, rot_rad):
     src_result[1] = src_point[0] * sn + src_point[1] * cs
 
     return src_result
-
-
-def crop(img, center, scale, output_size, rot=0):
-    trans = get_affine_transform(center, scale, rot, output_size)
-
-    dst_img = cv2.warpAffine(
-        img, trans, (int(output_size[0]), int(output_size[1])),
-        flags=cv2.INTER_LINEAR
-    )
-
-    return dst_img

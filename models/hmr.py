@@ -6,7 +6,6 @@ import torchvision.models.resnet as resnet
 import numpy as np
 import math
 from utils.geometry import rot6d_to_rotmat
-from core.cfgs import cfg
 
 import logging
 logger = logging.getLogger(__name__)
@@ -140,7 +139,7 @@ class ResNet_Backbone(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x, init_pose=None, init_shape=None, init_cam=None, n_iter=3):
+    def forward(self, x):
 
         batch_size = x.shape[0]
 

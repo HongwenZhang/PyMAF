@@ -22,8 +22,6 @@ import time
 import json
 import torch
 import joblib
-import shutil
-import colorsys
 import argparse
 import numpy as np
 from tqdm import tqdm
@@ -34,12 +32,10 @@ from matplotlib.image import imsave
 from skimage.transform import resize
 
 from core.cfgs import cfg, parse_args
-from models import hmr, SMPL, pymaf_net
+from models import hmr, pymaf_net
 from utils.renderer import OpenDRenderer, PyRenderer
 from core import path_config
 from datasets.inference import Inference
-from datasets.data_utils.kp_utils import convert_kps
-from utils.pose_tracker import run_posetracker
 from utils.demo_utils import (
     download_youtube_clip,
     convert_crop_cam_to_orig_img,

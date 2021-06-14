@@ -1,15 +1,12 @@
 # This script is borrowed and extended from https://github.com/nkolot/SPIN/blob/master/utils/base_trainer.py
 from __future__ import division
-import sys
-import time
 
 import torch
 from tqdm import tqdm
 tqdm.monitor_interval = 0
 from tensorboardX import SummaryWriter
-from core.cfgs import cfg
 
-from utils import CheckpointDataLoader, CheckpointSaver
+from utils import CheckpointSaver
 
 import logging
 logger = logging.getLogger(__name__)

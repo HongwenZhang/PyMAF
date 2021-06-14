@@ -13,8 +13,7 @@ from torchvision.transforms import Normalize
 from core import path_config, constants
 from core.cfgs import cfg
 from utils.imutils import crop, flip_img, flip_pose, flip_kp, transform, transform_pts, rot_aa
-from models.smpl import SMPL, get_part_joints
-from utils.geometry import projection, perspective_projection, estimate_translation
+from models.smpl import SMPL
 
 import logging
 logging.basicConfig(level=logging.INFO)

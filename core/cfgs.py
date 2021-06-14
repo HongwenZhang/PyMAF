@@ -16,10 +16,6 @@
 
 import os
 import json
-import random
-import string
-import argparse
-from datetime import datetime
 from yacs.config import CfgNode as CN
 
 # Configuration variables

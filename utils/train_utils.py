@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import socket
 import random
 import string
 from datetime import datetime

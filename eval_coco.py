@@ -13,21 +13,16 @@ import cv2
 import torch
 import argparse
 import numpy as np
-import torchgeometry as tgm
 from tqdm import tqdm
-from collections import OrderedDict
 from torch.utils.data import DataLoader
 
 from core.cfgs import cfg, parse_args
 from core import constants, path_config
 from datasets import COCODataset
 from models import hmr, SMPL, pymaf_net
-from utils.imutils import uncrop
-from utils.pose_utils import reconstruction_error
 from utils.part_utils import PartRenderer
-from utils.geometry import perspective_projection, estimate_translation
+from utils.geometry import perspective_projection
 from utils.transforms import transform_preds
-from utils.vis import vis_batch_image_with_joints
 from utils.uv_vis import vis_smpl_iuv
 
 import logging
@@ -39,7 +34,7 @@ parser.add_argument('--checkpoint', default=None, help='Path to network checkpoi
 parser.add_argument('--dataset', default='coco', help='Choose evaluation dataset')
 parser.add_argument('--batch_size', default=32, type=int, help='Batch size for testing')
 parser.add_argument('--regressor', type=str, choices=['hmr', 'pymaf_net'], default='pymaf_net', help='Name of the SMPL regressor.')
-parser.add_argument('--cfg_file', type=str, default='configs/pymaf_config.yaml', help='config file path for HRNet.')
+parser.add_argument('--cfg_file', type=str, default='configs/pymaf_config.yaml', help='config file path for PyMAF.')
 
 parser.add_argument('--log_freq', default=50, type=int, help='Frequency of printing intermediate results')
 parser.add_argument('--shuffle', default=False, action='store_true', help='Shuffle data')

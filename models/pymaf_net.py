@@ -1,20 +1,13 @@
-import os
 import torch
 import torch.nn as nn
-import torchvision.models.resnet as resnet
 import numpy as np
-import math
-import torch._utils
-import torch.nn.functional as F
 
 from core.cfgs import cfg
 from utils.geometry import rot6d_to_rotmat, projection, rotation_matrix_to_angle_axis
 from .maf_extractor import MAF_Extractor
-from .smpl import SMPL, get_part_joints, SMPL_MODEL_DIR, SMPL_MEAN_PARAMS, H36M_TO_J14
+from .smpl import SMPL, SMPL_MODEL_DIR, SMPL_MEAN_PARAMS, H36M_TO_J14
 from .hmr import ResNet_Backbone
-from torchvision.models.resnet import BasicBlock, Bottleneck
 from .res_module import IUV_predict_layer
-from utils.iuvmap import iuvmap_clean
 
 import logging
 logger = logging.getLogger(__name__)
@@ -22,7 +15,7 @@ logger = logging.getLogger(__name__)
 BN_MOMENTUM = 0.1
 
 class Regressor(nn.Module):
-    def __init__(self, feat_dim, smpl_mean_params=SMPL_MEAN_PARAMS):
+    def __init__(self, feat_dim, smpl_mean_params):
         super().__init__()
 
         npose = 24 * 6
@@ -162,7 +155,7 @@ class PyMAF(nn.Module):
     """ PyMAF based Deep Regressor for Human Mesh Recovery
     """
 
-    def __init__(self, smpl_mean_params=None, pretrained=True):
+    def __init__(self, smpl_mean_params=SMPL_MEAN_PARAMS, pretrained=True):
         super().__init__()
 
         self.feature_extractor = ResNet_Backbone(model=cfg.MODEL.PyMAF.BACKBONE, pretrained=pretrained)
@@ -195,7 +188,7 @@ class PyMAF(nn.Module):
                 ref_infeat_dim = grid_feat_len
             else:
                 ref_infeat_dim = ma_feat_len
-            self.regressor.append(Regressor(feat_dim=ref_infeat_dim))
+            self.regressor.append(Regressor(feat_dim=ref_infeat_dim, smpl_mean_params=smpl_mean_params))
 
         dp_feat_dim = 256
         self.with_uv = cfg.LOSS.POINT_REGRESSION_WEIGHTS > 0
@@ -323,7 +316,7 @@ class PyMAF(nn.Module):
 
         return out_list, vis_feat_list
 
-def pymaf_net(smpl_mean_params, pretrained=True, **kwargs):
+def pymaf_net(smpl_mean_params, pretrained=True):
     """ Constructs an PyMAF model with ResNet50 backbone.
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet

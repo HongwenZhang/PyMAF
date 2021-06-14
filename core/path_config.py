@@ -1,5 +1,5 @@
 """
-# This script is borrowed and extended from https://github.com/nkolot/SPIN/blob/master/path_config.py
+This script is borrowed and extended from https://github.com/nkolot/SPIN/blob/master/path_config.py
 path configuration
 This file contains definitions of useful data stuctures and the paths
 for the datasets and data files necessary to run the code.

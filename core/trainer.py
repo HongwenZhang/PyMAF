@@ -1,12 +1,8 @@
 # This script is borrowed and extended from https://github.com/nkolot/SPIN/blob/master/train/trainer.py
 
-import os
-import cv2
 import time
 import torch
-import pprint
 import numpy as np
-from scipy import ndimage
 import torch.nn as nn
 from tqdm import tqdm
 import torch.nn.functional as F
@@ -23,11 +19,10 @@ from .base_trainer import BaseTrainer
 from datasets import MixedDataset, BaseDataset
 from models import hmr, pymaf_net, SMPL
 from utils.pose_utils import compute_similarity_transform_batch
-from utils.geometry import batch_rodrigues, projection, perspective_projection, estimate_translation
+from utils.geometry import batch_rodrigues, perspective_projection, estimate_translation
 from core import path_config, constants
 from .fits_dict import FitsDict
 from .cfgs import cfg
-import utils.vis as vis_utils
 from utils.train_utils import print_args
 from utils.iuvmap import iuv_img2map, iuv_map2img
 

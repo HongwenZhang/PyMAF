@@ -1,10 +1,10 @@
 """
 This file contains functions that are used to perform data augmentation.
 """
+import cv2
 import torch
 import numpy as np
 import scipy.misc
-import cv2
 
 from core import constants
 

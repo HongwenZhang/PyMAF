@@ -5,11 +5,9 @@ import scipy
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import distributions as dist
 
 from core.cfgs import cfg
 from utils.geometry import projection
-from .smpl import SMPL, SMPL_MODEL_DIR
 
 import logging
 logger = logging.getLogger(__name__)

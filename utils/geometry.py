@@ -1,7 +1,6 @@
 import torch
-from torch.nn import functional as F
 import numpy as np
-from collections import defaultdict
+from torch.nn import functional as F
 
 """
 Useful geometric operations, e.g. Perspective projection and a differentiable Rodrigues formula
