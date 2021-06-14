@@ -39,7 +39,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-from mpl_toolkits.mplot3d import Axes3D
 from skimage.transform import resize
 
 plt.rcParams['pdf.fonttype'] = 42  # For editing in Adobe Illustrator
