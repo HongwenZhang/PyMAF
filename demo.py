@@ -222,8 +222,8 @@ def main(args):
 
                     pred_cam.append(output['theta'][:, :3].reshape(batch_size * seqlen, -1))
                     pred_verts.append(output['verts'].reshape(batch_size * seqlen, -1, 3))
-                    pred_pose.append(output['theta'][:, 3:75].reshape(batch_size * seqlen, -1))
-                    pred_betas.append(output['theta'][:, 75:].reshape(batch_size * seqlen, -1))
+                    pred_pose.append(output['theta'][:, 13:85].reshape(batch_size * seqlen, -1))
+                    pred_betas.append(output['theta'][:, 3:13].reshape(batch_size * seqlen, -1))
                     pred_joints3d.append(output['kp_3d'].reshape(batch_size * seqlen, -1, 3))
 
                 pred_cam = torch.cat(pred_cam, dim=0)
