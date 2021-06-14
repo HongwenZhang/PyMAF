@@ -173,8 +173,6 @@ class PyMAF(nn.Module):
         for _ in range(cfg.MODEL.PyMAF.N_ITER):
             self.maf_extractor.append(MAF_Extractor())
         ma_feat_len = self.maf_extractor[-1].Dmap.shape[0] * cfg.MODEL.PyMAF.MLP_DIM[-1]
-
-        reg_infeat_dim = 2048
         
         grid_size = 21
         xv, yv = torch.meshgrid([torch.linspace(-1, 1, grid_size), torch.linspace(-1, 1, grid_size)])
@@ -256,7 +254,7 @@ class PyMAF(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x, J_regressor=None, mask=None):
+    def forward(self, x, J_regressor=None):
 
         batch_size = x.shape[0]
 

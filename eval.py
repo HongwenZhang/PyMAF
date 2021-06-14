@@ -26,8 +26,7 @@ from torch.utils.data import DataLoader
 from datasets import BaseDataset
 from models import hmr, SMPL, pymaf_net
 from core import constants, path_config
-from core.cfgs import cfg, parse_args
-from utils.train_utils import prepare_env
+from core.cfgs import parse_args
 from utils.imutils import uncrop
 from utils.uv_vis import vis_smpl_iuv
 from utils.pose_utils import reconstruction_error
@@ -96,14 +95,7 @@ def run_evaluation(model, dataset):
     # MPJPE and Reconstruction error for the non-parametric and parametric shapes
     mpjpe = np.zeros(len(dataset))
     recon_err = np.zeros(len(dataset))
-    mpjpe_smpl = np.zeros(len(dataset))
-    recon_err_smpl = np.zeros(len(dataset))
     pve = np.zeros(len(dataset))
-
-    # Shape metrics
-    # Mean per-vertex error
-    shape_err = np.zeros(len(dataset))
-    shape_err_smpl = np.zeros(len(dataset))
 
     # Mask and part metrics
     # Accuracy

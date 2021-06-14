@@ -20,7 +20,6 @@ from core.cfgs import cfg, parse_args
 from core import constants, path_config
 from datasets import COCODataset
 from models import hmr, SMPL, pymaf_net
-from utils.part_utils import PartRenderer
 from utils.geometry import perspective_projection
 from utils.transforms import transform_preds
 from utils.uv_vis import vis_smpl_iuv
@@ -60,17 +59,6 @@ def run_evaluation(model, dataset_name, dataset, result_file,
     # Load SMPL model
     smpl_neutral = SMPL(path_config.SMPL_MODEL_DIR,
                         create_transl=False).to(device)
-    smpl_male = SMPL(path_config.SMPL_MODEL_DIR,
-                     gender='male',
-                     create_transl=False).to(device)
-    smpl_female = SMPL(path_config.SMPL_MODEL_DIR,
-                       gender='female',
-                       create_transl=False).to(device)
-    
-    renderer = PartRenderer()
-    
-    # Regressor for H36m joints
-    J_regressor = torch.from_numpy(np.load(path_config.JOINT_REGRESSOR_H36M)).float()
     
     save_results = result_file is not None
     # Disable shuffling if you want to save the results
@@ -79,25 +67,11 @@ def run_evaluation(model, dataset_name, dataset, result_file,
     # Create dataloader for the dataset
     data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
-    fits_dict = None
-
-    # Pose metrics
-    # MPJPE and Reconstruction error for the non-parametric and parametric shapes
-    mpjpe = np.zeros(len(dataset))
-    recon_err = np.zeros(len(dataset))
-    mpjpe_smpl = np.zeros(len(dataset))
-    recon_err_smpl = np.zeros(len(dataset))
-
     # Store SMPL parameters
     smpl_pose = np.zeros((len(dataset), 72))
     smpl_betas = np.zeros((len(dataset), 10))
     smpl_camera = np.zeros((len(dataset), 3))
     pred_joints = np.zeros((len(dataset), 17, 3))
-
-    # joint_mapper_coco = constants.H36M_TO_JCOCO
-    joint_mapper_gt = constants.J24_TO_JCOCO
-
-    focal_length = 5000
 
     num_joints = 17
     num_samples = len(dataset)
@@ -112,7 +86,7 @@ def run_evaluation(model, dataset_name, dataset, result_file,
     imgnums = []
     idx = 0
     with torch.no_grad():
-        for step, batch in enumerate(tqdm(data_loader, desc='Eval', total=len(data_loader))):
+        for _, batch in enumerate(tqdm(data_loader, desc='Eval', total=len(data_loader))):
             if len(options.vis_imname) > 0:
                 imgnames = [i_n.split('/')[-1] for i_n in batch['imgname']]
                 name_hit = False
