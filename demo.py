@@ -37,7 +37,7 @@ from utils.renderer import OpenDRenderer, PyRenderer
 from core import path_config
 from datasets.inference import Inference
 from utils.demo_utils import (
-    download_youtube_clip,
+    download_url,
     convert_crop_cam_to_orig_img,
     prepare_rendering_results,
     video_to_images,
@@ -55,7 +55,7 @@ def main(args):
         # ========= [Optional] download the youtube video ========= #
         if video_file.startswith('https://www.youtube.com'):
             print(f'Donwloading YouTube video \"{video_file}\"')
-            video_file = download_youtube_clip(video_file, '/tmp')
+            video_file = download_url(video_file, '/tmp')
 
             if video_file is None:
                 exit('Youtube url is not valid!')
