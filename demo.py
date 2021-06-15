@@ -37,7 +37,7 @@ from utils.renderer import OpenDRenderer, PyRenderer
 from core import path_config
 from datasets.inference import Inference
 from utils.demo_utils import (
-    download_youtube_clip,
+    download_url,
     convert_crop_cam_to_orig_img,
     prepare_rendering_results,
     video_to_images,
