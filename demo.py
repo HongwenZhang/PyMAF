@@ -55,7 +55,7 @@ def main(args):
         # ========= [Optional] download the youtube video ========= #
         if video_file.startswith('https://www.youtube.com'):
             print(f'Donwloading YouTube video \"{video_file}\"')
-            video_file = download_youtube_clip(video_file, '/tmp')
+            video_file = download_url(video_file, '/tmp')
 
             if video_file is None:
                 exit('Youtube url is not valid!')
