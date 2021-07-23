@@ -272,6 +272,8 @@ class PyMAF(nn.Module):
         out_list = {}
 
         # initial parameters
+        # TODO: remove the initial mesh generation during forward to reduce runtime
+        # by generating initial mesh the beforehand: smpl_output = self.init_smpl
         smpl_output = self.regressor[0].forward_init(g_feat, J_regressor=J_regressor)
 
         out_list['smpl_out'] = [smpl_output]
@@ -302,6 +304,7 @@ class PyMAF(nn.Module):
                 ref_feature = self.maf_extractor[rf_i].sampling(sample_points)
             else:
                 pred_smpl_verts = smpl_output['verts'].detach()
+                # TODO: use a more sparse SMPL implementation (with 431 vertices) for acceleration
                 pred_smpl_verts_ds = torch.matmul(self.maf_extractor[rf_i].Dmap.unsqueeze(0), pred_smpl_verts) # [B, 431, 3]
                 ref_feature = self.maf_extractor[rf_i](pred_smpl_verts_ds) # [B, 431 * n_feat]
 
