@@ -83,6 +83,13 @@ python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --v
     <sup>Frame by frame reconstruction. Video clipped from <a href="https://www.youtube.com/watch?v=2DiQUX11YaY" target="_blank"><i>here</i></a>.</sup>
 </p>
 
+More results:
+<p align="left">
+    <img src="http://cedro3.com/wp-content/uploads/2021/04/out.gif">
+    <br>
+    <sup>Credit: <a href="http://cedro3.com/ai/pymaf" target="_blank"><i>cedro</i></a>.</sup>
+</p>
+
 ## Evaluation
 
 ### Human3.6M / 3DPW
