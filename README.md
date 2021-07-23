@@ -85,7 +85,7 @@ python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --v
 
 More results:
 <p align="left">
-    <img src="http://cedro3.com/wp-content/uploads/2021/04/out.gif">
+    <img src="https://hongwenzhang.github.io/pymaf/files/cedro_blog.gif">
     <br>
     <sup>Credit: <a href="http://cedro3.com/ai/pymaf" target="_blank"><i>cedro</i></a>.</sup>
 </p>
