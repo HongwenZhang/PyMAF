@@ -1,12 +1,13 @@
 # PyMAF
 This repository contains the code for the following paper:
 
-**3D Human Pose and Shape Regression with Pyramidal Mesh Alignment Feedback Loop**  
-Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, Zhenan Sun
-
+**PyMAF: 3D Human Pose and Shape Regression with Pyramidal Mesh Alignment Feedback Loop**  
+Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, Zhenan Sun  
 \* Equal contribution
 
-[[Project Page]](https://hongwenzhang.github.io/pymaf)	[[ArXiv]](https://arxiv.org/abs/2103.16507)	[[Paper]](https://arxiv.org/pdf/2103.16507.pdf)
+ICCV, 2021 (Oral)
+
+[[Project Page]](https://hongwenzhang.github.io/pymaf) [[Paper]](https://arxiv.org/pdf/2103.16507.pdf)
 
 [![PyMAF](https://hongwenzhang.github.io/images/pymaf.jpg "PyMAF")](https://hongwenzhang.github.io/pymaf)
 
@@ -124,10 +125,10 @@ Running the above commands will use Human3.6M or mixed datasets for training, re
 ## Citation
 If this work is helpful in your research, please cite the following paper.
 ```
-@article{pymaf2021,
-  title={3D Human Pose and Shape Regression with Pyramidal Mesh Alignment Feedback Loop},
+@inproceedings{pymaf2021,
+  title={PyMAF: 3D Human Pose and Shape Regression with Pyramidal Mesh Alignment Feedback Loop},
   author={Zhang, Hongwen and Tian, Yating and Zhou, Xinchi and Ouyang, Wanli and Liu, Yebin and Wang, Limin and Sun, Zhenan},
-  journal={arXiv preprint arXiv:2103.16507},
+  booktitle={Proceedings of the IEEE International Conference on Computer Vision},
   year={2021}
 }
 ```
