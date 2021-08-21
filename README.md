@@ -5,7 +5,7 @@ This repository contains the code for the following paper:
 Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, Zhenan Sun  
 \* Equal contribution
 
-ICCV, 2021 (Oral)
+ICCV, 2021 (Oral Paper)
 
 [[Project Page]](https://hongwenzhang.github.io/pymaf) [[Paper]](https://arxiv.org/pdf/2103.16507.pdf)
 
@@ -73,8 +73,14 @@ After collecting the above necessary files, the directory structure of `./data` 
 
 Run the demo code.
 
+#### For image input:
+
 ```
-python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --vid_file ./flashmob.mp4
+python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --img_file examples/COCO_val2014_000000019667.jpg
+```
+#### For video input:
+```
+python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --vid_file examples/flashmob.mp4
 ```
 
 <p align="left">
@@ -86,6 +92,24 @@ python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --v
 More results: [Project Page](https://hongwenzhang.github.io/pymaf)
 
 ## Evaluation
+
+### COCO Keypoint Localization
+
+1. Download the preprocessed data [coco_2014_val.npz](https://drive.google.com/drive/folders/1R4_Vi4TpCQ26-6_b2PhjTBg-nBxZKjz6?usp=sharing). Put it into the `./data/dataset_extras` directory. 
+
+2. Run the COCO evaluation code.
+```
+python3 eval_coco.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt
+```
+
+Results in [Average Precision (AP)](https://cocodataset.org/#keypoints-eval):
+
+| Method         | AP &uarr; | AP<sub>50</sub> &uarr; | AP<sub>75</sub> &uarr; | AP<sub>M</sub> &uarr; |   AP<sub>L</sub> &uarr; |
+|----------------|:------------:|:------------:|:------------:|:------------:|:------------:|
+| [HMR](https://github.com/akanazawa/hmr)     | 18.9 |   47.5 | 11.7 |  21.5 |  17.0 |  
+| [SPIN](https://github.com/nkolot/SPIN)     | 17.3 |   39.1  |  13.5 |   19.0  | 16.6  |
+| Baseline | 16.8  |  38.2 | 12.8 |  18.5   | 16.0 | 
+| PyMAF    | **24.6** |    **48.9**  | **22.7** |  **26.0** | **24.2** | 
 
 ### Human3.6M / 3DPW
 
@@ -100,14 +124,14 @@ python3 eval.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --d
 python3 eval.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --dataset=3dpw --log_freq=20
 ```
 
-### COCO Keypoint Localization
+Results in Mean Per Joint Position Error (MPJPE):
 
-1. Download the preprocessed data [coco_2014_val.npz](https://drive.google.com/drive/folders/1R4_Vi4TpCQ26-6_b2PhjTBg-nBxZKjz6?usp=sharing). Put it into the `./data/dataset_extras` directory. 
-
-2. Run the COCO evaluation code.
-```
-python3 eval_coco.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt
-```
+| Method         | 3DPW &darr; | H36M &darr; |
+|----------------|:------------:|:------------:|
+| [SPIN](https://github.com/nkolot/SPIN)       | 96.9 |    62.5 |
+| [VIBE](https://github.com/mkocabas/VIBE)      | 93.5 |    65.9  |
+| Baseline | 98.5 |  64.8 |
+| PyMAF    | **92.8** |    **57.7**  |
 
 ## Training
 
@@ -152,4 +176,3 @@ The code is developed upon the following projects. Many thanks to their contribu
 - [HMR](https://github.com/akanazawa/hmr)
 
 - [pose_resnet](https://github.com/Microsoft/human-pose-estimation.pytorch)
-
