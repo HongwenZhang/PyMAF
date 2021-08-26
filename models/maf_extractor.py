@@ -111,7 +111,7 @@ class MAF_Extractor(nn.Module):
 
         batch_size = im_feat.shape[0]
 
-        point_feat = torch.nn.functional.grid_sample(im_feat, points.unsqueeze(2))[..., 0]
+        point_feat = torch.nn.functional.grid_sample(im_feat, points.unsqueeze(2)，align_corners=True)[..., 0]
 
         mesh_align_feat = self.reduce_dim(point_feat)
         return mesh_align_feat
