@@ -1,5 +1,6 @@
 # This script is borrowed and extended from https://github.com/shunsukesaito/PIFu/blob/master/lib/model/SurfaceClassifier.py
 
+from packaging import version
 import torch
 import scipy
 import numpy as np
@@ -111,7 +112,11 @@ class MAF_Extractor(nn.Module):
 
         batch_size = im_feat.shape[0]
 
-        point_feat = torch.nn.functional.grid_sample(im_feat, points.unsqueeze(2), align_corners=True)[..., 0]
+        if version.parse(torch.__version__) >= version.parse('1.3.0'):
+            # Default grid_sample behavior has changed to align_corners=False since 1.3.0.
+            point_feat = torch.nn.functional.grid_sample(im_feat, points.unsqueeze(2), align_corners=True)[..., 0]
+        else:
+            point_feat = torch.nn.functional.grid_sample(im_feat, points.unsqueeze(2))[..., 0]
 
         mesh_align_feat = self.reduce_dim(point_feat)
         return mesh_align_feat
