@@ -312,7 +312,7 @@ class PyMAF(nn.Module):
             smpl_output = self.regressor[rf_i](ref_feature, pred_pose, pred_shape, pred_cam, n_iter=1, J_regressor=J_regressor)
             out_list['smpl_out'].append(smpl_output)
 
-        if self.training and cfg.MODEL.PyMAF.AUX_SUPV_ON:
+        if cfg.MODEL.PyMAF.AUX_SUPV_ON:
             iuv_out_dict = self.dp_head(s_feat)
             out_list['dp_out'].append(iuv_out_dict)
 
