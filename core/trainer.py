@@ -534,7 +534,7 @@ class Trainer(BaseTrainer):
         joint_mapper_gt = constants.J24_TO_J17 if self.options.eval_dataset == 'mpi-inf-3dhp' else constants.J24_TO_J14
 
         if self.options.rank == 0:
-            pbar = tqdm(desc='Eval', total=len(self.valid_ds) // cfg.TRAIN.BATCH_SIZE)
+            pbar = tqdm(desc='Eval', total=len(self.valid_ds) // cfg.TEST.BATCH_SIZE)
         for i, target in enumerate(self.valid_loader):
             if self.options.rank == 0:
                 pbar.update(1)
