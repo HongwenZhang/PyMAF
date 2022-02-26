@@ -3,7 +3,6 @@
 import torch
 import numpy as np
 from smplx import SMPL as _SMPL
-from smplx.body_models import ModelOutput
 from smplx.lbs import vertices2joints
 from collections import namedtuple
 
@@ -26,7 +25,10 @@ class SMPL(_SMPL):
         J_regressor_extra = np.load(path_config.JOINT_REGRESSOR_TRAIN_EXTRA)
         self.register_buffer('J_regressor_extra', torch.tensor(J_regressor_extra, dtype=torch.float32))
         self.joint_map = torch.tensor(joints, dtype=torch.long)
-        self.ModelOutput = namedtuple('ModelOutput_', ModelOutput._fields + ('smpl_joints', 'joints_J19',))
+        self.ModelOutput = namedtuple('ModelOutput',
+                         ['vertices', 'joints', 'full_pose', 'betas',
+                          'global_orient',
+                          'body_pose', 'smpl_joints', 'joints_J19'])
         self.ModelOutput.__new__.__defaults__ = (None,) * len(self.ModelOutput._fields)
 
     def forward(self, *args, **kwargs):
@@ -49,6 +51,7 @@ class SMPL(_SMPL):
                                   betas=smpl_output.betas,
                                   full_pose=smpl_output.full_pose)
         return output
+
 
 def get_smpl_faces():
     smpl = SMPL(SMPL_MODEL_DIR, batch_size=1, create_transl=False)
