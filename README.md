@@ -88,6 +88,11 @@ python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --v
     <br>
     <sup>Frame by frame reconstruction. Video clipped from <a href="https://www.youtube.com/watch?v=2DiQUX11YaY" target="_blank"><i>here</i></a>.</sup>
 </p>
+<p align="left">
+    <img src="https://hongwenzhang.github.io/pymaf/files/dancer_result.gif">
+    <br>
+    <sup>Frame by frame reconstruction. Video clipped from <a href="https://youtu.be/xg_nXRHoqkE?t=77" target="_blank"><i>here</i></a>.</sup>
+</p>
 
 More results: [Project Page](https://hongwenzhang.github.io/pymaf)
 
