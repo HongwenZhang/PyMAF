@@ -9,7 +9,20 @@ ICCV, 2021 (Oral Paper)
 
 [[Project Page]](https://hongwenzhang.github.io/pymaf) [[Paper]](https://arxiv.org/pdf/2103.16507.pdf)
 
-[![PyMAF](https://hongwenzhang.github.io/images/pymaf.jpg "PyMAF")](https://hongwenzhang.github.io/pymaf)
+<!-- [![PyMAF](https://hongwenzhang.github.io/images/pymaf.jpg "PyMAF")](https://hongwenzhang.github.io/pymaf) -->
+
+<p align="left">
+    <img src="https://hongwenzhang.github.io/pymaf/files/flashmob.gif">
+    <br>
+    <sup>Frame by frame reconstruction. Video clipped from <a href="https://www.youtube.com/watch?v=2DiQUX11YaY" target="_blank"><i>here</i></a>.</sup>
+</p>
+<p align="left">
+    <img src="https://hongwenzhang.github.io/pymaf/files/dancer_result.gif">
+    <br>
+    <sup>Frame by frame reconstruction. Video clipped from <a href="https://youtu.be/xg_nXRHoqkE?t=77" target="_blank"><i>here</i></a>.</sup>
+</p>
+
+More results: [Click Here](https://hongwenzhang.github.io/pymaf)
 
 ## Requirements
 
@@ -80,21 +93,12 @@ python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --i
 ```
 #### For video input:
 ```
+# video with single person
+python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --vid_file examples/dancer.mp4
+# video with multiple persons
 python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --vid_file examples/flashmob.mp4
 ```
 
-<p align="left">
-    <img src="https://hongwenzhang.github.io/pymaf/files/flashmob.gif">
-    <br>
-    <sup>Frame by frame reconstruction. Video clipped from <a href="https://www.youtube.com/watch?v=2DiQUX11YaY" target="_blank"><i>here</i></a>.</sup>
-</p>
-<p align="left">
-    <img src="https://hongwenzhang.github.io/pymaf/files/dancer_result.gif">
-    <br>
-    <sup>Frame by frame reconstruction. Video clipped from <a href="https://youtu.be/xg_nXRHoqkE?t=77" target="_blank"><i>here</i></a>.</sup>
-</p>
-
-More results: [Project Page](https://hongwenzhang.github.io/pymaf)
 
 ## Evaluation
 
