@@ -1,11 +1,12 @@
 tqdm
 yacs
+numba
 numpy
 filterpy
 cython
 chumpy
 trimesh
-pyrender==0.1.43
+pyrender
 matplotlib
 json_tricks
 scikit-image
@@ -13,7 +14,7 @@ opencv-python
 scikit-image
 scipy==1.2.2
 tensorboardx
-smplx==0.1.13
+smplx==0.1.28
 torchgeometry
 git+https://github.com/daniilidis-group/neural_renderer.git
 git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI

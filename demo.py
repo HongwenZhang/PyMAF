@@ -306,7 +306,7 @@ def run_video_demo(args):
             frames = dataset.frames
             has_keypoints = True if joints2d is not None else False
 
-            dataloader = DataLoader(dataset, batch_size=args.model_batch_size, num_workers=16)
+            dataloader = DataLoader(dataset, batch_size=args.model_batch_size, num_workers=8)
 
             with torch.no_grad():
 
@@ -426,8 +426,8 @@ def run_video_demo(args):
 
             raw_img = img.copy()
 
-            # if args.sideview:
-            #     side_img = np.zeros_like(img)
+            if args.sideview:
+                side_img = np.zeros_like(img)
             
             if args.empty_bg:
                 empty_img = np.zeros_like(img)
@@ -460,15 +460,15 @@ def run_video_demo(args):
                         mesh_filename=mesh_filename
                     )
 
-                # if args.sideview:
-                #     side_img = renderer(
-                #         frame_verts,
-                #         img=side_img,
-                #         cam=frame_cam,
-                #         color_type=color_type,
-                #         angle=270,
-                #         axis=[0,1,0],
-                #     )
+                if args.sideview:
+                    side_img = renderer(
+                        frame_verts,
+                        img=side_img,
+                        cam=frame_cam,
+                        color_type=color_type,
+                        angle=270,
+                        axis=[0,1,0],
+                    )
 
             if args.with_raw:
                 img = np.concatenate([raw_img, img], axis=1)
@@ -476,10 +476,10 @@ def run_video_demo(args):
             if args.empty_bg:
                 img = np.concatenate([img, empty_img], axis=1)
 
-            # if args.sideview:
-            #     img = np.concatenate([img, side_img], axis=1)
+            if args.sideview:
+                img = np.concatenate([img, side_img], axis=1)
 
-            # cv2.imwrite(os.path.join(output_img_folder, f'{frame_idx:06d}.png'), img)
+            cv2.imwrite(os.path.join(output_img_folder, f'{frame_idx:06d}.png'), img)
             if args.image_based:
                 imsave(os.path.join(output_img_folder, osp.split(img_fname)[-1][:-4]+'.png'), img)
             else:
@@ -544,8 +544,8 @@ if __name__ == '__main__':
                         help='attach raw image.')
     parser.add_argument('--empty_bg', action='store_true',
                         help='render meshes on empty background.')
-    # parser.add_argument('--sideview', action='store_true',
-    #                     help='render meshes from alternate viewpoint.')
+    parser.add_argument('--sideview', action='store_true',
+                        help='render meshes from alternate viewpoint.')
     parser.add_argument('--image_based', action='store_true',
                         help='image based reconstruction.')
     parser.add_argument('--use_gt', action='store_true',
