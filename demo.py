@@ -38,6 +38,7 @@ from core import path_config, constants
 from datasets.inference import Inference
 from utils.renderer import OpenDRenderer, PyRenderer
 from utils.imutils import crop
+from utils.pose_tracker import run_posetracker
 from utils.demo_utils import (
     download_url,
     convert_crop_cam_to_orig_img,
@@ -216,16 +217,22 @@ def run_video_demo(args):
             bbox = np.array(bbox)
             tracking_results[track_id] = {'frames': f_id, 'bbox': bbox}
     else:
-        # run multi object tracker
-        mot = MPT(
-            device=device,
-            batch_size=args.tracker_batch_size,
-            display=args.display,
-            detector_type=args.detector,
-            output_format='dict',
-            yolo_img_size=args.yolo_img_size,
-        )
-        tracking_results = mot(image_folder)
+        # bbox_scale = 1.1
+        if args.tracking_method == 'pose':
+            if not os.path.isabs(video_file):
+                video_file = os.path.join(os.getcwd(), video_file)
+            tracking_results = run_posetracker(video_file, staf_folder=args.staf_dir, display=args.display)
+        else:
+            # run multi object tracker
+            mot = MPT(
+                device=device,
+                batch_size=args.tracker_batch_size,
+                display=args.display,
+                detector_type=args.detector,
+                output_format='dict',
+                yolo_img_size=args.yolo_img_size,
+            )
+            tracking_results = mot(image_folder)
 
     # remove tracklets if num_frames is less than MIN_NUM_FRAMES
     for person_id in list(tracking_results.keys()):
@@ -524,6 +531,8 @@ if __name__ == '__main__':
                         help='input image size for yolo detector')
     parser.add_argument('--tracker_batch_size', type=int, default=12,
                         help='batch size of object detector used for bbox tracking')
+    parser.add_argument('--staf_dir', type=str, default='/home/jd/Projects/2D/STAF',
+                        help='path to directory STAF pose tracking method.')
     parser.add_argument('--regressor', type=str, default='pymaf_net', 
                         help='Name of the SMPL regressor.')
     parser.add_argument('--cfg_file', type=str, default='configs/pymaf_config.yaml',
