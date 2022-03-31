@@ -38,6 +38,7 @@ from core import path_config, constants
 from datasets.inference import Inference
 from utils.renderer import OpenDRenderer, PyRenderer
 from utils.imutils import crop
+from utils.pose_tracker import run_posetracker
 from utils.demo_utils import (
     download_url,
     convert_crop_cam_to_orig_img,
@@ -121,7 +122,7 @@ def run_image_demo(args):
     img_shape = renderer(
                     pred_vertices[None, :, :] if args.use_opendr else pred_vertices,
                     img=img_np,
-                    cam=pred_camera[0],
+                    cam=pred_camera[0].cpu().numpy(),
                     color_type='purple',
                     mesh_filename=save_mesh_path
                 )
@@ -135,7 +136,7 @@ def run_image_demo(args):
     img_shape_side = renderer(
                         rot_vertices[None, :, :] if args.use_opendr else rot_vertices,
                         img=np.ones_like(img_np),
-                        cam=pred_camera[0],
+                        cam=pred_camera[0].cpu().numpy(),
                         color_type='purple',
                         mesh_filename=save_mesh_path
                     )
@@ -216,16 +217,22 @@ def run_video_demo(args):
             bbox = np.array(bbox)
             tracking_results[track_id] = {'frames': f_id, 'bbox': bbox}
     else:
-        # run multi object tracker
-        mot = MPT(
-            device=device,
-            batch_size=args.tracker_batch_size,
-            display=args.display,
-            detector_type=args.detector,
-            output_format='dict',
-            yolo_img_size=args.yolo_img_size,
-        )
-        tracking_results = mot(image_folder)
+        # bbox_scale = 1.1
+        if args.tracking_method == 'pose':
+            if not os.path.isabs(video_file):
+                video_file = os.path.join(os.getcwd(), video_file)
+            tracking_results = run_posetracker(video_file, staf_folder=args.staf_dir, display=args.display)
+        else:
+            # run multi object tracker
+            mot = MPT(
+                device=device,
+                batch_size=args.tracker_batch_size,
+                display=args.display,
+                detector_type=args.detector,
+                output_format='dict',
+                yolo_img_size=args.yolo_img_size,
+            )
+            tracking_results = mot(image_folder)
 
     # remove tracklets if num_frames is less than MIN_NUM_FRAMES
     for person_id in list(tracking_results.keys()):
@@ -306,7 +313,7 @@ def run_video_demo(args):
             frames = dataset.frames
             has_keypoints = True if joints2d is not None else False
 
-            dataloader = DataLoader(dataset, batch_size=args.model_batch_size, num_workers=16)
+            dataloader = DataLoader(dataset, batch_size=args.model_batch_size, num_workers=8)
 
             with torch.no_grad():
 
@@ -426,8 +433,8 @@ def run_video_demo(args):
 
             raw_img = img.copy()
 
-            # if args.sideview:
-            #     side_img = np.zeros_like(img)
+            if args.sideview:
+                side_img = np.zeros_like(img)
             
             if args.empty_bg:
                 empty_img = np.zeros_like(img)
@@ -460,15 +467,15 @@ def run_video_demo(args):
                         mesh_filename=mesh_filename
                     )
 
-                # if args.sideview:
-                #     side_img = renderer(
-                #         frame_verts,
-                #         img=side_img,
-                #         cam=frame_cam,
-                #         color_type=color_type,
-                #         angle=270,
-                #         axis=[0,1,0],
-                #     )
+                if args.sideview:
+                    side_img = renderer(
+                        frame_verts,
+                        img=side_img,
+                        cam=frame_cam,
+                        color_type=color_type,
+                        angle=270,
+                        axis=[0,1,0],
+                    )
 
             if args.with_raw:
                 img = np.concatenate([raw_img, img], axis=1)
@@ -476,10 +483,10 @@ def run_video_demo(args):
             if args.empty_bg:
                 img = np.concatenate([img, empty_img], axis=1)
 
-            # if args.sideview:
-            #     img = np.concatenate([img, side_img], axis=1)
+            if args.sideview:
+                img = np.concatenate([img, side_img], axis=1)
 
-            # cv2.imwrite(os.path.join(output_img_folder, f'{frame_idx:06d}.png'), img)
+            cv2.imwrite(os.path.join(output_img_folder, f'{frame_idx:06d}.png'), img)
             if args.image_based:
                 imsave(os.path.join(output_img_folder, osp.split(img_fname)[-1][:-4]+'.png'), img)
             else:
@@ -524,6 +531,8 @@ if __name__ == '__main__':
                         help='input image size for yolo detector')
     parser.add_argument('--tracker_batch_size', type=int, default=12,
                         help='batch size of object detector used for bbox tracking')
+    parser.add_argument('--staf_dir', type=str, default='/home/jd/Projects/2D/STAF',
+                        help='path to directory STAF pose tracking method.')
     parser.add_argument('--regressor', type=str, default='pymaf_net', 
                         help='Name of the SMPL regressor.')
     parser.add_argument('--cfg_file', type=str, default='configs/pymaf_config.yaml',
@@ -544,8 +553,8 @@ if __name__ == '__main__':
                         help='attach raw image.')
     parser.add_argument('--empty_bg', action='store_true',
                         help='render meshes on empty background.')
-    # parser.add_argument('--sideview', action='store_true',
-    #                     help='render meshes from alternate viewpoint.')
+    parser.add_argument('--sideview', action='store_true',
+                        help='render meshes from alternate viewpoint.')
     parser.add_argument('--image_based', action='store_true',
                         help='image based reconstruction.')
     parser.add_argument('--use_gt', action='store_true',

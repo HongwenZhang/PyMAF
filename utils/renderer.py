@@ -3,7 +3,6 @@ import os
 import torch
 import trimesh
 import numpy as np
-import neural_renderer as nr
 from skimage.transform import resize
 from torchvision.utils import make_grid
 
@@ -11,17 +10,21 @@ from models.smpl import get_smpl_faces
 from utils.densepose_methods import DensePoseMethods
 
 try:
+    import neural_renderer as nr
+except ModuleNotFoundError:
+    print('Failed to import *neural_renderer*. Please ignore the warning if PyMAF is in the inference phase.')
+try:
     import math
     import pyrender
     from pyrender.constants import RenderFlags
-except:
-    pass
+except ModuleNotFoundError:
+    print('Failed to import *pyrender*. Please ignore the warning if opendr is appointed to render results.')
 try:
     from opendr.renderer import ColoredRenderer
     from opendr.lighting import LambertianPointLight, SphericalHarmonics
     from opendr.camera import ProjectPoints
-except:
-    pass
+except ModuleNotFoundError:
+    print('Failed to import *opendr*. Please ignore the warning if pyrender is appointed to render results.')
 
 
 import logging

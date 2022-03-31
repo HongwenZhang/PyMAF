@@ -19,7 +19,7 @@ ICCV, 2021 (Oral Paper)
 <p align="left">
     <img src="https://hongwenzhang.github.io/pymaf/files/dancer_result.gif">
     <br>
-    <sup>Frame by frame reconstruction. Video clipped from <a href="https://youtu.be/xg_nXRHoqkE?t=77" target="_blank"><i>here</i></a>.</sup>
+    <sup>Frame by frame reconstruction. Video clipped from <a href="https://youtu.be/xg_nXRHoqkE?t=65" target="_blank"><i>here</i></a>.</sup>
 </p>
 
 More results: [Click Here](https://hongwenzhang.github.io/pymaf)
