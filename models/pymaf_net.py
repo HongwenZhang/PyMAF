@@ -7,7 +7,7 @@ from utils.geometry import rot6d_to_rotmat, projection, rotation_matrix_to_angle
 from .maf_extractor import MAF_Extractor
 from .smpl import SMPL, SMPL_MODEL_DIR, SMPL_MEAN_PARAMS, H36M_TO_J14
 from .hmr import ResNet_Backbone
-from .res_module import IUV_predict_layer
+from .iuv_predictor import IUV_predict_layer
 
 import logging
 logger = logging.getLogger(__name__)
