@@ -4,7 +4,8 @@ This file contains functions that are used to perform data augmentation.
 import cv2
 import torch
 import numpy as np
-import scipy.misc
+import skimage.transform
+from PIL import Image
 
 from core import constants
 
@@ -75,15 +76,15 @@ def crop(img, center, scale, res, rot=0):
     # Range to sample from original image
     old_x = max(0, ul[0]), min(len(img[0]), br[0])
     old_y = max(0, ul[1]), min(len(img), br[1])
-    new_img[new_y[0]:new_y[1], new_x[0]:new_x[1]] = img[old_y[0]:old_y[1], 
-                                                        old_x[0]:old_x[1]]
+    new_img[new_y[0]:new_y[1], new_x[0]:new_x[1]] = img[old_y[0]:old_y[1], old_x[0]:old_x[1]]
 
     if not rot == 0:
         # Remove padding
-        new_img = scipy.misc.imrotate(new_img, rot)
+        new_img = skimage.transform.rotate(new_img, rot).astype(np.uint8)
         new_img = new_img[pad:-pad, pad:-pad]
 
-    new_img = scipy.misc.imresize(new_img, res)
+    new_img = np.array(Image.fromarray(new_img.astype(np.uint8)).resize(res))
+    
     return new_img
 
 def uncrop(img, center, scale, orig_shape, rot=0, is_rgb=True):
@@ -102,14 +103,18 @@ def uncrop(img, center, scale, orig_shape, rot=0, is_rgb=True):
     if len(img.shape) > 2:
         new_shape += [img.shape[2]]
     new_img = np.zeros(orig_shape, dtype=np.uint8)
+    
     # Range to fill new array
     new_x = max(0, -ul[0]), min(br[0], orig_shape[1]) - ul[0]
     new_y = max(0, -ul[1]), min(br[1], orig_shape[0]) - ul[1]
+    
     # Range to sample from original image
     old_x = max(0, ul[0]), min(orig_shape[1], br[0])
     old_y = max(0, ul[1]), min(orig_shape[0], br[1])
-    img = scipy.misc.imresize(img, crop_shape, interp='nearest')
+
+    img = np.array(Image.fromarray(img.astype(np.uint8)).resize(crop_shape))
     new_img[old_y[0]:old_y[1], old_x[0]:old_x[1]] = img[new_y[0]:new_y[1], new_x[0]:new_x[1]]
+    
     return new_img
 
 def rot_aa(aa, rot):

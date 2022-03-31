@@ -5,6 +5,7 @@ numpy
 filterpy
 cython
 chumpy
+Pillow
 trimesh
 pyrender
 matplotlib

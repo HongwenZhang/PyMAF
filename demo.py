@@ -122,7 +122,7 @@ def run_image_demo(args):
     img_shape = renderer(
                     pred_vertices[None, :, :] if args.use_opendr else pred_vertices,
                     img=img_np,
-                    cam=pred_camera[0],
+                    cam=pred_camera[0].cpu().numpy(),
                     color_type='purple',
                     mesh_filename=save_mesh_path
                 )
@@ -136,7 +136,7 @@ def run_image_demo(args):
     img_shape_side = renderer(
                         rot_vertices[None, :, :] if args.use_opendr else rot_vertices,
                         img=np.ones_like(img_np),
-                        cam=pred_camera[0],
+                        cam=pred_camera[0].cpu().numpy(),
                         color_type='purple',
                         mesh_filename=save_mesh_path
                     )
