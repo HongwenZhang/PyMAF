@@ -225,6 +225,19 @@ def rot6d_to_rotmat(x):
     b3 = torch.cross(b1, b2)
     return torch.stack((b1, b2, b3), dim=-1)
 
+def rotmat_to_rot6d(x):
+    """Convert 3x3 rotation matrix to 6D rotation representation.
+    Based on Zhou et al., "On the Continuity of Rotation Representations in Neural Networks", CVPR 2019
+    Input:
+        (B,3,3) Batch of corresponding rotation matrices
+    Output:
+        (B,6) Batch of 6-D rotation representations
+    """
+    batch_size = x.shape[0]
+    x = x[:, :, :2]
+    x = x.reshape(batch_size, 6)
+    return x
+
 def projection(pred_joints, pred_camera, retain_z=False):
     pred_cam_t = torch.stack([pred_camera[:, 1],
                               pred_camera[:, 2],
