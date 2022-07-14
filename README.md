@@ -1,3 +1,5 @@
+:wave::wave::wave: **[Update]** PyMAF is now extended as PyMAF-X for full-body model recovery. Check out the new project page [here](https://www.liuyebin.com/pymaf-x)
+
 # PyMAF
 This repository contains the code for the following paper:
 
