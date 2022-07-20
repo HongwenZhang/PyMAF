@@ -76,7 +76,7 @@ After collecting the above necessary files, the directory structure of `./data` 
 │   ├── SMPL_MALE.pkl
 │   └── SMPL_NEUTRAL.pkl
 ├── smpl_mean_params.npz
-├── static_fits
+├── final_fits
 │   └── .npy files
 └── UV_data
     ├── UV_Processed.mat
