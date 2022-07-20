@@ -59,6 +59,8 @@ bash fetch_data.sh
 
 > Fetch preprocessed data from [SPIN](https://github.com/nkolot/SPIN#fetch-data).
 
+> Fetch final_fits data from [SPIN](https://github.com/nkolot/SPIN#final-fits).
+
 > Download the [pre-trained model](https://drive.google.com/drive/folders/1R4_Vi4TpCQ26-6_b2PhjTBg-nBxZKjz6?usp=sharing) and put it into the `./data/pretrained_model` directory.
 
 After collecting the above necessary files, the directory structure of `./data` is expected as follows.  
