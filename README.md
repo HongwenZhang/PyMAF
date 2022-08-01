@@ -26,6 +26,7 @@
 
 ```
 conda create --no-default-packages -n pymafx python=3.8
+conda activate pymafx
 ```
 
 ### packages
@@ -33,7 +34,6 @@ conda create --no-default-packages -n pymafx python=3.8
 - [PyTorch](https://www.pytorch.org) tested on version 1.9.0
 ```
 conda install pytorch==1.9.0 torchvision==0.10.0 cudatoolkit=11.1 -c pytorch -c conda-forge
-conda activate pymafx
 ```
 
 - [pytorch3d](https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md)
