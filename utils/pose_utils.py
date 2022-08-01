@@ -85,6 +85,8 @@ def axis_angle_add(theta, roll_axis, alpha):
     Returns:
         equivalent axis-angle of the composition
     """
+    alpha = alpha / 2.
+
     l2norm = torch.norm(theta + 1e-8, p=2, dim=1)
     angle = torch.unsqueeze(l2norm, -1)
 
@@ -120,6 +122,7 @@ def axis_angle_add_np(theta, roll_axis, alpha):
     Returns:
         equivalent axis-angle of the composition
     """
+    alpha = alpha / 2.
 
     angle = np.linalg.norm(theta + 1e-8, ord=2, axis=1, keepdims=True)
     normalized = np.divide(theta, angle)

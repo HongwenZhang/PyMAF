@@ -16,14 +16,18 @@
 
 import os
 import cv2
+import time
+import json
 import torch
 import subprocess
 import numpy as np
 import os.path as osp
+# from pytube import YouTube
 from collections import OrderedDict
 
-from utils.smooth_bbox import get_all_bbox_params
+from utils.smooth_bbox import get_smooth_bbox_params, get_all_bbox_params
 from datasets.data_utils.img_utils import get_single_image_crop_demo
+from utils.geometry import rotation_matrix_to_angle_axis
 
 
 def preprocess_video(video, joints2d, bboxes, frames, scale=1.0, crop_size=224):
@@ -77,6 +81,89 @@ def preprocess_video(video, joints2d, bboxes, frames, scale=1.0, crop_size=224):
     temp_video = temp_video.astype(np.uint8)
 
     return temp_video, norm_video, bboxes, joints2d, frames
+
+
+def download_youtube_clip(url, download_folder):
+    return YouTube(url).streams.first().download(output_path=download_folder)
+
+
+def smplify_runner(
+        pred_rotmat,
+        pred_betas,
+        pred_cam,
+        j2d,
+        device,
+        batch_size,
+        lr=1.0,
+        opt_steps=1,
+        use_lbfgs=True,
+        pose2aa=True
+):
+    smplify = TemporalSMPLify(
+        step_size=lr,
+        batch_size=batch_size,
+        num_iters=opt_steps,
+        focal_length=5000.,
+        use_lbfgs=use_lbfgs,
+        device=device,
+        # max_iter=10,
+    )
+    # Convert predicted rotation matrices to axis-angle
+    if pose2aa:
+        pred_pose = rotation_matrix_to_angle_axis(pred_rotmat.detach()).reshape(batch_size, -1)
+    else:
+        pred_pose = pred_rotmat
+
+    # Calculate camera parameters for smplify
+    pred_cam_t = torch.stack([
+        pred_cam[:, 1], pred_cam[:, 2],
+        2 * 5000 / (224 * pred_cam[:, 0] + 1e-9)
+    ], dim=-1)
+
+    gt_keypoints_2d_orig = j2d
+    # Before running compute reprojection error of the network
+    opt_joint_loss = smplify.get_fitting_loss(
+        pred_pose.detach(), pred_betas.detach(),
+        pred_cam_t.detach(),
+        0.5 * 224 * torch.ones(batch_size, 2, device=device),
+        gt_keypoints_2d_orig).mean(dim=-1)
+
+    best_prediction_id = torch.argmin(opt_joint_loss).item()
+    pred_betas = pred_betas[best_prediction_id].unsqueeze(0)
+    # pred_betas = pred_betas[best_prediction_id:best_prediction_id+2] # .unsqueeze(0)
+    # top5_best_idxs = torch.topk(opt_joint_loss, 5, largest=False)[1]
+    # breakpoint()
+
+    start = time.time()
+    # Run SMPLify optimization initialized from the network prediction
+    # new_opt_vertices, new_opt_joints, \
+    # new_opt_pose, new_opt_betas, \
+    # new_opt_cam_t, \
+    output, new_opt_joint_loss = smplify(
+        pred_pose.detach(), pred_betas.detach(),
+        pred_cam_t.detach(),
+        0.5 * 224 * torch.ones(batch_size, 2, device=device),
+        gt_keypoints_2d_orig,
+    )
+    new_opt_joint_loss = new_opt_joint_loss.mean(dim=-1)
+    # smplify_time = time.time() - start
+    # print(f'Smplify time: {smplify_time}')
+    # Will update the dictionary for the examples where the new loss is less than the current one
+    update = (new_opt_joint_loss < opt_joint_loss)
+
+    new_opt_vertices = output['verts']
+    new_opt_cam_t = output['theta'][:,:3]
+    new_opt_pose = output['theta'][:,3:75]
+    new_opt_betas = output['theta'][:,75:]
+    new_opt_joints3d = output['kp_3d']
+
+    return_val = [
+        update, new_opt_vertices.cpu(), new_opt_cam_t.cpu(),
+        new_opt_pose.cpu(), new_opt_betas.cpu(), new_opt_joints3d.cpu(),
+        new_opt_joint_loss, opt_joint_loss,
+    ]
+
+    return return_val
 
 
 def trim_videos(filename, start_time, end_time, output_filename):
@@ -180,13 +267,15 @@ def convert_crop_cam_to_orig_img(cam, bbox, img_width, img_height):
     return orig_cam
 
 
-def prepare_rendering_results(vibe_results, nframes):
+def prepare_rendering_results(results_dict, nframes):
     frame_results = [{} for _ in range(nframes)]
-    for person_id, person_data in vibe_results.items():
+    for person_id, person_data in results_dict.items():
         for idx, frame_id in enumerate(person_data['frame_ids']):
             frame_results[frame_id][person_id] = {
                 'verts': person_data['verts'][idx],
+                'smplx_verts': person_data['smplx_verts'][idx] if 'smplx_verts' in person_data else None,
                 'cam': person_data['orig_cam'][idx],
+                'cam_t': person_data['orig_cam_t'][idx] if 'orig_cam_t' in person_data else None,
                 # 'cam': person_data['pred_cam'][idx],
             }
 

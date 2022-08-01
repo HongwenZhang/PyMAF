@@ -39,6 +39,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
+from mpl_toolkits.mplot3d import Axes3D
 from skimage.transform import resize
 
 plt.rcParams['pdf.fonttype'] = 42  # For editing in Adobe Illustrator
@@ -376,7 +377,7 @@ def vis_one_image(
 
 
 def vis_batch_image_with_joints(batch_image, batch_joints, batch_joints_vis,
-                                 file_name=None, nrow=8, padding=1, pad_value=1):
+                                 file_name=None, nrow=8, padding=0, pad_value=1, add_text=True):
     '''
     batch_image: [batch_size, channel, height, width]
     batch_joints: [batch_size, num_joints, 3],
@@ -412,11 +413,12 @@ def vis_batch_image_with_joints(batch_image, batch_joints, batch_joints_vis,
                 if joint_vis[0]:
                     try:
                         if flip > 0:
-                            cv2.circle(ndarr, (int(joint[0]), int(joint[1])), 1, [255, 0, 0], 1)
+                            cv2.circle(ndarr, (int(joint[0]), int(joint[1])), 0, [255, 0, 0], -1)
                         else:
-                            cv2.circle(ndarr, (int(joint[0]), int(joint[1])), 1, [0, 255, 0], 1)
-                        cv2.putText(ndarr, str(count), (int(joint[0]), int(joint[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                                    (255, 0, 0), 1)
+                            cv2.circle(ndarr, (int(joint[0]), int(joint[1])), 0, [0, 255, 0], -1)
+                        if add_text:
+                            cv2.putText(ndarr, str(count), (int(joint[0]), int(joint[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                    ( 0, 255, 0), 1)
                     except Exception as e:
                         print(e)
             k = k + 1

@@ -24,7 +24,7 @@ class CheckpointSaver():
             return os.path.isfile(checkpoint_file)
     
     def save_checkpoint(self, models, optimizers, epoch, batch_idx, batch_size,
-                        total_step_count, is_best=False, save_by_step=False, interval=5):
+                        total_step_count, is_best=False, save_by_step=False, interval=5, with_optimizer=True):
         """Save checkpoint."""
         timestamp = datetime.datetime.now()
         if self.overwrite:
@@ -41,17 +41,18 @@ class CheckpointSaver():
         for model in models:
             model_dict = models[model].state_dict()
             for k in list(model_dict.keys()):
-                if k.startswith('iuv2smpl.smpl.'):
+                if '.smpl.' in k:                    
                     del model_dict[k]
             checkpoint[model] = model_dict
-        for optimizer in optimizers:
-            checkpoint[optimizer] = optimizers[optimizer].state_dict()
+        if with_optimizer:
+            for optimizer in optimizers:
+                checkpoint[optimizer] = optimizers[optimizer].state_dict()
         checkpoint['epoch'] = epoch
         checkpoint['batch_idx'] = batch_idx
         checkpoint['batch_size'] = batch_size
         checkpoint['total_step_count'] = total_step_count
         print(timestamp, 'Epoch:', epoch, 'Iteration:', batch_idx)
-        
+
         if checkpoint_filename is not None:
             torch.save(checkpoint, checkpoint_filename)
             print('Saving checkpoint file [' + checkpoint_filename + ']')
@@ -113,5 +114,5 @@ class CheckpointSaver():
             return [ atof(c) for c in re.split(r'[+-]?([0-9]+(?:[.][0-9]*)?|[.][0-9]+)', text) ]
         
         checkpoint_list.sort(key=natural_keys)
-        self.latest_checkpoint =  None if (len(checkpoint_list) is 0) else checkpoint_list[-1]
+        self.latest_checkpoint =  None if (len(checkpoint_list) == 0) else checkpoint_list[-1]
         return

@@ -1,6 +1,14 @@
+from cmath import pi
+from sys import float_repr_style
+from matplotlib.pyplot import angle_spectrum
+from numpy.testing._private.utils import print_assert_equal
 import torch
-import numpy as np
 from torch.nn import functional as F
+import numpy as np
+import numbers
+from collections import defaultdict
+from einops.einops import rearrange
+
 
 """
 Useful geometric operations, e.g. Perspective projection and a differentiable Rodrigues formula
@@ -127,6 +135,53 @@ def quaternion_to_angle_axis(quaternion: torch.Tensor) -> torch.Tensor:
     angle_axis[..., 2] += q3 * k
     return angle_axis
 
+
+def quaternion_to_angle(quaternion: torch.Tensor) -> torch.Tensor:
+    """
+    Convert quaternion vector to angle of the rotation.
+
+    Args:
+        quaternion (torch.Tensor): tensor with quaternions.
+
+    Return:
+        torch.Tensor: tensor with angle axis of rotation.
+
+    Shape:
+        - Input: :math:`(*, 4)` where `*` means, any number of dimensions
+        - Output: :math:`(*, 1)`
+
+    Example:
+        >>> quaternion = torch.rand(2, 4)  # Nx4
+        >>> angle_axis = tgm.quaternion_to_angle(quaternion)  # Nx1
+    """
+    if not torch.is_tensor(quaternion):
+        raise TypeError("Input type is not a torch.Tensor. Got {}".format(
+            type(quaternion)))
+
+    if not quaternion.shape[-1] == 4:
+        raise ValueError("Input must be a tensor of shape Nx4 or 4. Got {}"
+                         .format(quaternion.shape))
+    # unpack input and compute conversion
+    q1: torch.Tensor = quaternion[..., 1]
+    q2: torch.Tensor = quaternion[..., 2]
+    q3: torch.Tensor = quaternion[..., 3]
+    sin_squared_theta: torch.Tensor = q1 * q1 + q2 * q2 + q3 * q3
+
+    sin_theta: torch.Tensor = torch.sqrt(sin_squared_theta)
+    cos_theta: torch.Tensor = quaternion[..., 0]
+    theta: torch.Tensor = 2.0 * torch.where(
+        cos_theta < 0.0,
+        torch.atan2(-sin_theta, -cos_theta),
+        torch.atan2(sin_theta, cos_theta))
+
+
+    # theta: torch.Tensor = 2.0 * torch.atan2(sin_theta, cos_theta)
+    
+    # theta2 = torch.where(sin_squared_theta > 0.0, - theta, theta)
+
+    return theta.unsqueeze(-1)
+
+
 def rotation_matrix_to_quaternion(rotation_matrix, eps=1e-6):
     """
     This function is borrowed from https://github.com/kornia/kornia
@@ -158,10 +213,10 @@ def rotation_matrix_to_quaternion(rotation_matrix, eps=1e-6):
         raise ValueError(
             "Input size must be a three dimensional tensor. Got {}".format(
                 rotation_matrix.shape))
-    if not rotation_matrix.shape[-2:] == (3, 4):
-        raise ValueError(
-            "Input size must be a N x 3 x 4  tensor. Got {}".format(
-                rotation_matrix.shape))
+    # if not rotation_matrix.shape[-2:] == (3, 4):
+    #     raise ValueError(
+    #         "Input size must be a N x 3 x 4  tensor. Got {}".format(
+    #             rotation_matrix.shape))
 
     rmat_t = torch.transpose(rotation_matrix, 1, 2)
 
@@ -209,6 +264,56 @@ def rotation_matrix_to_quaternion(rotation_matrix, eps=1e-6):
     q *= 0.5
     return q
 
+
+def batch_euler2matrix(r):
+    return quaternion_to_rotation_matrix(euler_to_quaternion(r))
+
+
+def euler_to_quaternion(r):
+    x = r[..., 0]
+    y = r[..., 1]
+    z = r[..., 2]
+
+    z = z/2.0
+    y = y/2.0
+    x = x/2.0
+    cz = torch.cos(z)
+    sz = torch.sin(z)
+    cy = torch.cos(y)
+    sy = torch.sin(y)
+    cx = torch.cos(x)
+    sx = torch.sin(x)
+    quaternion = torch.zeros_like(r.repeat(1,2))[..., :4].to(r.device)
+    quaternion[..., 0] += cx*cy*cz - sx*sy*sz
+    quaternion[..., 1] += cx*sy*sz + cy*cz*sx
+    quaternion[..., 2] += cx*cz*sy - sx*cy*sz
+    quaternion[..., 3] += cx*cy*sz + sx*cz*sy
+    return quaternion
+
+
+def quaternion_to_rotation_matrix(quat):
+    """Convert quaternion coefficients to rotation matrix.
+    Args:
+        quat: size = [B, 4] 4 <===>(w, x, y, z)
+    Returns:
+        Rotation matrix corresponding to the quaternion -- size = [B, 3, 3]
+    """
+    norm_quat = quat
+    norm_quat = norm_quat / norm_quat.norm(p=2, dim=1, keepdim=True)
+    w, x, y, z = norm_quat[:, 0], norm_quat[:, 1], norm_quat[:, 2], norm_quat[:, 3]
+
+    B = quat.size(0)
+
+    w2, x2, y2, z2 = w.pow(2), x.pow(2), y.pow(2), z.pow(2)
+    wx, wy, wz = w * x, w * y, w * z
+    xy, xz, yz = x * y, x * z, y * z
+
+    rotMat = torch.stack([w2 + x2 - y2 - z2, 2 * xy - 2 * wz, 2 * wy + 2 * xz,
+                          2 * wz + 2 * xy, w2 - x2 + y2 - z2, 2 * yz - 2 * wx,
+                          2 * xz - 2 * wy, 2 * wx + 2 * yz, w2 - x2 - y2 + z2], dim=1).view(B, 3, 3)
+    return rotMat
+
+
 def rot6d_to_rotmat(x):
     """Convert 6D rotation representation to 3x3 rotation matrix.
     Based on Zhou et al., "On the Continuity of Rotation Representations in Neural Networks", CVPR 2019
@@ -217,13 +322,33 @@ def rot6d_to_rotmat(x):
     Output:
         (B,3,3) Batch of corresponding rotation matrices
     """
-    x = x.view(-1,3,2)
-    a1 = x[:, :, 0]
-    a2 = x[:, :, 1]
-    b1 = F.normalize(a1)
-    b2 = F.normalize(a2 - torch.einsum('bi,bi->b', b1, a2).unsqueeze(-1) * b1)
-    b3 = torch.cross(b1, b2)
-    return torch.stack((b1, b2, b3), dim=-1)
+    if x.shape[-1] == 6:
+        batch_size = x.shape[0]
+        if len(x.shape) == 3:
+            num = x.shape[1]
+            x = rearrange(x, 'b n d -> (b n) d', d=6)
+        else:
+            num = 1
+        x = rearrange(x, 'b (k l) -> b k l', k=3, l=2)
+        # x = x.view(-1,3,2)
+        a1 = x[:, :, 0]
+        a2 = x[:, :, 1]
+        b1 = F.normalize(a1)
+        b2 = F.normalize(a2 - torch.einsum('bi,bi->b', b1, a2).unsqueeze(-1) * b1)
+        b3 = torch.cross(b1, b2, dim=-1)
+
+        mat = torch.stack((b1, b2, b3), dim=-1)
+        if num > 1:
+            mat = rearrange(mat, '(b n) h w-> b n h w', b=batch_size, n=num, h=3, w=3)
+    else:
+        x = x.view(-1,3,2)
+        a1 = x[:, :, 0]
+        a2 = x[:, :, 1]
+        b1 = F.normalize(a1)
+        b2 = F.normalize(a2 - torch.einsum('bi,bi->b', b1, a2).unsqueeze(-1) * b1)
+        b3 = torch.cross(b1, b2, dim=-1)
+        mat = torch.stack((b1, b2, b3), dim=-1)
+    return mat
 
 def rotmat_to_rot6d(x):
     """Convert 3x3 rotation matrix to 6D rotation representation.
@@ -238,24 +363,70 @@ def rotmat_to_rot6d(x):
     x = x.reshape(batch_size, 6)
     return x
 
-def projection(pred_joints, pred_camera, retain_z=False):
-    pred_cam_t = torch.stack([pred_camera[:, 1],
-                              pred_camera[:, 2],
-                              2 * 5000. / (224. * pred_camera[:, 0] + 1e-9)], dim=-1)
+def rotmat_to_angle(x):
+    """Convert rotation to one-D angle.
+    Based on Zhou et al., "On the Continuity of Rotation Representations in Neural Networks", CVPR 2019
+    Input:
+        (B,2) Batch of corresponding rotation
+    Output:
+        (B,1) Batch of 1-D angle
+    """
+    a = F.normalize(x)
+    angle = torch.atan2(a[:, 0], a[:, 1]).unsqueeze(-1)
+
+    return angle
+
+def projection(pred_joints, pred_camera, retain_z=False, iwp_mode=True):
+    """ Project 3D points on the image plane based on the given camera info, 
+        Identity rotation and Weak Perspective (IWP) camera is used when iwp_mode=True, more about camera settings:
+        SPEC: Seeing People in the Wild with an Estimated Camera, ICCV 2021
+    """
+
     batch_size = pred_joints.shape[0]
-    camera_center = torch.zeros(batch_size, 2)
-    pred_keypoints_2d = perspective_projection(pred_joints,
-                                               rotation=torch.eye(3).unsqueeze(0).expand(batch_size, -1, -1).to(pred_joints.device),
-                                               translation=pred_cam_t,
-                                               focal_length=5000.,
-                                               camera_center=camera_center,
-                                               retain_z=retain_z)
-    # Normalize keypoints to [-1,1]
-    pred_keypoints_2d = pred_keypoints_2d / (224. / 2.)
+    if iwp_mode:
+        cam_sxy = pred_camera['cam_sxy']
+        pred_cam_t = torch.stack([cam_sxy[:, 1],
+                                cam_sxy[:, 2],
+                                2 * 5000. / (224. * cam_sxy[:, 0] + 1e-9)], dim=-1)
+        
+        camera_center = torch.zeros(batch_size, 2)
+        pred_keypoints_2d = perspective_projection(pred_joints,
+                                                rotation=torch.eye(3).unsqueeze(0).expand(batch_size, -1, -1).to(pred_joints.device),
+                                                translation=pred_cam_t,
+                                                focal_length=5000.,
+                                                camera_center=camera_center,
+                                                retain_z=retain_z)
+        # # Normalize keypoints to [-1,1]
+        # pred_keypoints_2d = pred_keypoints_2d / (224. / 2.)
+    else:
+        assert type(pred_camera) is dict
+
+        bbox_scale, bbox_center = pred_camera['bbox_scale'], pred_camera['bbox_center']
+        img_w, img_h, crop_res =  pred_camera['img_w'], pred_camera['img_h'], pred_camera['crop_res']
+        cam_sxy, cam_rotmat, cam_intrinsics = pred_camera['cam_sxy'], pred_camera['cam_rotmat'], pred_camera['cam_intrinsics']
+        if 'cam_t' in pred_camera:
+            cam_t = pred_camera['cam_t']
+        else:
+            cam_t = convert_to_full_img_cam(
+                pare_cam=cam_sxy,
+                bbox_height=bbox_scale * 200.,
+                bbox_center=bbox_center,
+                img_w=img_w,
+                img_h=img_h,
+                focal_length=cam_intrinsics[:, 0, 0],
+            )
+
+        pred_keypoints_2d = perspective_projection(
+            pred_joints,
+            rotation=cam_rotmat,
+            translation=cam_t,
+            cam_intrinsics=cam_intrinsics,
+        )
+
     return pred_keypoints_2d
 
 def perspective_projection(points, rotation, translation,
-                           focal_length, camera_center, retain_z=False):
+                           focal_length=None, camera_center=None, cam_intrinsics=None, retain_z=False):
     """
     This function computes the perspective projection of a set of points.
     Input:
@@ -266,11 +437,15 @@ def perspective_projection(points, rotation, translation,
         camera_center (bs, 2): Camera center
     """
     batch_size = points.shape[0]
-    K = torch.zeros([batch_size, 3, 3], device=points.device)
-    K[:,0,0] = focal_length
-    K[:,1,1] = focal_length
-    K[:,2,2] = 1.
-    K[:,:-1, -1] = camera_center
+    if cam_intrinsics is not None:
+        K = cam_intrinsics
+    else:
+        # raise
+        K = torch.zeros([batch_size, 3, 3], device=points.device)
+        K[:,0,0] = focal_length
+        K[:,1,1] = focal_length
+        K[:,2,2] = 1.
+        K[:,:-1, -1] = camera_center
 
     # Transform points
     points = torch.einsum('bij,bkj->bki', rotation, points)
@@ -288,7 +463,29 @@ def perspective_projection(points, rotation, translation,
         return projected_points[:, :, :-1]
 
 
-def estimate_translation_np(S, joints_2d, joints_conf, focal_length=5000, img_size=224):
+def convert_to_full_img_cam(
+        pare_cam, bbox_height, bbox_center,
+        img_w, img_h, focal_length):
+    # Converts weak perspective camera estimated by PARE in
+    # bbox coords to perspective camera in full image coordinates
+    # from https://arxiv.org/pdf/2009.06549.pdf
+    s, tx, ty = pare_cam[:, 0], pare_cam[:, 1], pare_cam[:, 2]
+    res = 224
+    r = bbox_height / res
+    tz = 2 * focal_length / (r * res * s)
+
+    cx = 2 * (bbox_center[:, 0] - (img_w / 2.)) / (s * bbox_height)
+    cy = 2 * (bbox_center[:, 1] - (img_h / 2.)) / (s * bbox_height)
+
+    if torch.is_tensor(pare_cam):
+        cam_t = torch.stack([tx + cx, ty + cy, tz], dim=-1)
+    else:
+        cam_t = np.stack([tx + cx, ty + cy, tz], axis=-1)
+
+    return cam_t
+
+
+def estimate_translation_np(S, joints_2d, joints_conf, focal_length=5000, img_size=(224., 224.)):
     """Find camera translation that brings 3D joints S closest to 2D the corresponding joints_2d.
     Input:
         S: (25, 3) 3D joint locations
@@ -301,7 +498,7 @@ def estimate_translation_np(S, joints_2d, joints_conf, focal_length=5000, img_si
     # focal length
     f = np.array([focal_length,focal_length])
     # optical center
-    center = np.array([img_size/2., img_size/2.])
+    center = np.array([img_size[1]/2., img_size[0]/2.])
 
     # transformations
     Z = np.reshape(np.tile(S[:,2],(2,1)).T,-1)
@@ -329,7 +526,7 @@ def estimate_translation_np(S, joints_2d, joints_conf, focal_length=5000, img_si
     return trans
 
 
-def estimate_translation(S, joints_2d, focal_length=5000., img_size=224.):
+def estimate_translation(S, joints_2d, focal_length=5000., img_size=224., use_all_kps=False):
     """Find camera translation that brings 3D joints S closest to 2D the corresponding joints_2d.
     Input:
         S: (B, 49, 3) 3D joint locations
@@ -337,11 +534,22 @@ def estimate_translation(S, joints_2d, focal_length=5000., img_size=224.):
     Returns:
         (B, 3) camera translation vectors
     """
+    if isinstance(focal_length, numbers.Number):
+        focal_length = [focal_length,] * S.shape[0]
+        # print(len(focal_length), focal_length)
+
+    if isinstance(img_size, numbers.Number):
+        img_size = [(img_size, img_size),] * S.shape[0]
+        # print(len(img_size), img_size)
 
     device = S.device
-    # Use only joints 25:49 (GT joints)
-    S = S[:, 25:, :].cpu().numpy()
-    joints_2d = joints_2d[:, 25:, :].cpu().numpy()
+    if use_all_kps:
+        S = S.cpu().numpy()
+        joints_2d = joints_2d.cpu().numpy()
+    else:
+        # Use only joints 25:49 (GT joints)
+        S = S[:, 25:, :].cpu().numpy()
+        joints_2d = joints_2d[:, 25:, :].cpu().numpy()
     joints_conf = joints_2d[:, :, -1]
     joints_2d = joints_2d[:, :, :-1]
     trans = np.zeros((S.shape[0], 3), dtype=np.float32)
@@ -350,7 +558,7 @@ def estimate_translation(S, joints_2d, focal_length=5000., img_size=224.):
         S_i = S[i]
         joints_i = joints_2d[i]
         conf_i = joints_conf[i]
-        trans[i] = estimate_translation_np(S_i, joints_i, conf_i, focal_length=focal_length, img_size=img_size)
+        trans[i] = estimate_translation_np(S_i, joints_i, conf_i, focal_length=focal_length[i], img_size=img_size[i])
     return torch.from_numpy(trans).to(device)
 
 
@@ -428,3 +636,52 @@ def Rot_z(angle, category='torch', prepend_dim=True, device=None):
 			return m
 	else:
 		raise ValueError("category must be 'torch' or 'numpy'")
+
+
+def compute_twist_ratation(rotation_matrix, twist_axis):
+    '''
+    Compute the twist component of given rotation and twist axis
+    https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
+    Parameters
+    ----------
+    rotation_matrix : Tensor (B, 3, 3,)
+        The rotation to convert
+    twist_axis : Tensor (B, 3,)
+        The twist axis
+    Returns
+    -------
+    Tensor (B, 3, 3)
+        The twist rotation
+    '''
+    quaternion = rotation_matrix_to_quaternion(rotation_matrix)
+
+    twist_axis = twist_axis / (torch.norm(twist_axis, dim=1, keepdim=True) + 1e-9)
+
+    projection = torch.einsum('bi,bi->b', twist_axis, quaternion[:, 1:]).unsqueeze(-1) * twist_axis
+
+    twist_quaternion = torch.cat([quaternion[:, 0:1], projection], dim=1)
+    twist_quaternion = twist_quaternion / (torch.norm(twist_quaternion, dim=1, keepdim=True) + 1e-9)
+
+    twist_rotation = quaternion_to_rotation_matrix(twist_quaternion)
+
+    # twist_angle0 = quaternion_to_angle(twist_quaternion)
+
+    twist_aa = quaternion_to_angle_axis(twist_quaternion)
+
+    # twist_rotation2 = batch_rodrigues(twist_aa)
+
+    # print('twist_rotation2', torch.dist(twist_rotation2, twist_rotation))
+
+    twist_angle = torch.sum(twist_aa, dim=1, keepdim=True) / torch.sum(twist_axis, dim=1, keepdim=True)
+
+    # print('norm', torch.dist(torch.norm(twist_axis * twist_angle, dim=1), torch.norm(twist_aa, dim=1)))
+    # exit()
+
+
+    # i = 1
+    # for i in range(len(twist_rotation2)):
+    #     print('twist aa', twist_angle[i], torch.norm(twist_axis * twist_angle, dim=1)[i], torch.norm(twist_aa, dim=1)[i], torch.dist(batch_rodrigues(twist_axis * twist_angle)[i], batch_rodrigues(twist_aa)[i]))
+    #     # print('twist aa', batch_rodrigues(-twist_axis * twist_angle)[i], batch_rodrigues(twist_aa)[i])
+    # exit()
+
+    return twist_rotation, twist_angle

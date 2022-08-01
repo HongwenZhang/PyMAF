@@ -4,11 +4,12 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-
-import os
 import numpy as np
+import copy
+import cv2
 from scipy.io import loadmat
 import scipy.spatial.distance
+import os
 
 
 class DensePoseMethods:

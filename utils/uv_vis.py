@@ -7,7 +7,7 @@ from skimage.transform import resize
 import matplotlib
 matplotlib.use('Agg')
 
-from .renderer import OpenDRenderer
+from .renderer import OpenDRenderer, PyRenderer
 
 
 def iuv_map2img(U_uv, V_uv, Index_UV, AnnIndex=None, uv_rois=None, ind_mapping=None):
@@ -65,12 +65,13 @@ def iuv_map2img(U_uv, V_uv, Index_UV, AnnIndex=None, uv_rois=None, ind_mapping=N
     return torch.cat(outputs, dim=0)
 
 
-def vis_smpl_iuv(image, cam_pred, vert_pred, face, pred_uv, vert_errors_batch, image_name, save_path, opt):
+def vis_smpl_iuv(image, cam_pred, vert_pred, face, pred_uv, vert_errors_batch, image_name, save_path, opt, ratio=1):
 
     # save_path = os.path.join('./notebooks/output/demo_results-wild', ids[f_id][0])
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-    dr_render = OpenDRenderer(ratio=opt.ratio)
+    # dr_render = OpenDRenderer(ratio=ratio)
+    dr_render = PyRenderer()
 
     focal_length = 5000.
     orig_size = 224.
@@ -85,20 +86,35 @@ def vis_smpl_iuv(image, cam_pred, vert_pred, face, pred_uv, vert_errors_batch, i
                       [0., focal_length, orig_size / 2.],
                       [0., 0., 1.]])
 
-        img_orig, img_resized, img_smpl, render_smpl_rgba = dr_render(
-            image[draw_i],
-            cam_pred[draw_i], K,
-            vert_pred[draw_i],
-            face,
-            draw_name[:-4]
-        )
+        # img_orig, img_resized, img_smpl, render_smpl_rgba = dr_render(
+        #     image[draw_i],
+        #     cam_pred[draw_i],
+        #     vert_pred[draw_i],
+        #     face,
+        #     draw_name[:-4]
+        # )
+        if opt.save_obj:
+            os.makedirs(os.path.join(save_path, 'mesh'), exist_ok=True)
+            mesh_filename = os.path.join(save_path, 'mesh', draw_name[:-4] + '.obj')
+        else:
+            mesh_filename = None
+
+        img_orig = np.moveaxis(image[draw_i], 0, -1)
+        img_smpl, img_resized = dr_render(vert_pred[draw_i],
+                        img=img_orig,
+                        cam=cam_pred[draw_i],
+                        iwp_mode=True,
+                        scale_ratio=4.,
+                        mesh_filename=mesh_filename,
+                    )
 
         ones_img = np.ones(img_smpl.shape[:2]) * 255
         ones_img = ones_img[:, :, None]
-        img_smpl_rgba = np.concatenate((img_smpl * 255, ones_img), axis=2)
-        img_resized_rgba = np.concatenate((img_resized * 255, ones_img), axis=2)
+        img_smpl_rgba = np.concatenate((img_smpl, ones_img), axis=2)
+        img_resized_rgba = np.concatenate((img_resized, ones_img), axis=2)
 
-        render_img = np.concatenate((img_resized_rgba, img_smpl_rgba, render_smpl_rgba * 255), axis=1)
+        # render_img = np.concatenate((img_resized_rgba, img_smpl_rgba, render_smpl_rgba * 255), axis=1)
+        render_img = np.concatenate((img_resized_rgba, img_smpl_rgba), axis=1)
         render_img[render_img < 0] = 0
         render_img[render_img > 255] = 255
         matplotlib.image.imsave(os.path.join(save_path, draw_name[:-4] + '.png'), render_img.astype(np.uint8))

@@ -28,10 +28,6 @@ def run_openpose(
         staf_folder,
         vis=False,
 ):
-    '''
-    https://github.com/soulslicer/STAF/tree/staf
-    Don't forget to switch to 'staf' branch
-    '''
     pwd = os.getcwd()
 
     os.chdir(staf_folder)
@@ -49,7 +45,7 @@ def run_openpose(
     ]
 
     print('Executing', ' '.join(cmd))
-    subprocess.run(cmd)
+    subprocess.call(cmd)
     os.chdir(pwd)
 
 
@@ -82,10 +78,10 @@ def read_posetrack_keypoints(output_folder):
     return people
 
 
-def run_posetracker(video_file, staf_folder, posetrack_output_folder='/home/jd/tmp', display=False):
+def run_posetracker(video_file, staf_folder, posetrack_output_folder='/tmp', display=False):
     posetrack_output_folder = os.path.join(
         posetrack_output_folder,
-        f'{os.path.basename(video_file)[:-4]}_posetrack'
+        f'{os.path.basename(video_file)}_posetrack'
     )
 
     # run posetrack on video

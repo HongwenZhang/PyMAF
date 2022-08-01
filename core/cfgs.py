@@ -16,6 +16,10 @@
 
 import os
 import json
+import random
+import string
+import argparse
+from datetime import datetime
 from yacs.config import CfgNode as CN
 
 # Configuration variables
@@ -50,6 +54,7 @@ cfg.MODEL = CN(new_allowed=True)
 cfg.MODEL.PyMAF = CN(new_allowed=True)
 
 ## switch
+cfg.TRAIN.BATCH_SIZE = 64
 cfg.TRAIN.VAL_LOOP = True
 
 cfg.TEST = CN(new_allowed=True)
@@ -86,6 +91,10 @@ def parse_args_extend(args):
         if not os.path.exists(args.log_dir):
             raise ValueError('Experiment are set to resume mode, but log directory does not exist.')
 
+        if args.cfg_file is not None:
+            cfg = update_cfg(args.cfg_file)
+        else:
+            cfg = get_cfg_defaults()
         # load log's cfg
         cfg_file = os.path.join(args.log_dir, 'cfg.yaml')
         cfg = update_cfg(cfg_file)

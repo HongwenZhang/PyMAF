@@ -1,9 +1,10 @@
 """
 This file contains functions that are used to perform data augmentation.
 """
-import cv2
+from numpy.testing._private.utils import print_assert_equal
 import torch
 import numpy as np
+import cv2
 import skimage.transform
 from PIL import Image
 
@@ -19,21 +20,28 @@ def get_transform(center, scale, res, rot=0):
     t[1, 2] = res[0] * (-float(center[1]) / h + .5)
     t[2, 2] = 1
     if not rot == 0:
-        rot = -rot # To match direction of rotation from cropping
-        rot_mat = np.zeros((3,3))
-        rot_rad = rot * np.pi / 180
-        sn,cs = np.sin(rot_rad), np.cos(rot_rad)
-        rot_mat[0,:2] = [cs, -sn]
-        rot_mat[1,:2] = [sn, cs]
-        rot_mat[2,2] = 1
-        # Need to rotate around center
-        t_mat = np.eye(3)
-        t_mat[0,2] = -res[1]/2
-        t_mat[1,2] = -res[0]/2
-        t_inv = t_mat.copy()
-        t_inv[:2,2] *= -1
-        t = np.dot(t_inv,np.dot(rot_mat,np.dot(t_mat,t)))
+        t = np.dot(get_rot_transf(res, rot),t)
     return t
+
+def get_rot_transf(res, rot):
+    """Generate rotation transformation matrix."""
+    if rot == 0:
+        return np.identity(3)
+    rot = -rot # To match direction of rotation from cropping
+    rot_mat = np.zeros((3,3))
+    rot_rad = rot * np.pi / 180
+    sn,cs = np.sin(rot_rad), np.cos(rot_rad)
+    rot_mat[0,:2] = [cs, -sn]
+    rot_mat[1,:2] = [sn, cs]
+    rot_mat[2,2] = 1
+    # Need to rotate around center
+    t_mat = np.eye(3)
+    t_mat[0,2] = -res[1]/2
+    t_mat[1,2] = -res[0]/2
+    t_inv = t_mat.copy()
+    t_inv[:2,2] *= -1
+    rot_transf = np.dot(t_inv,np.dot(rot_mat,t_mat))
+    return rot_transf
 
 def transform(pt, center, scale, res, invert=0, rot=0):
     """Transform pixel location to different reference."""
@@ -76,16 +84,17 @@ def crop(img, center, scale, res, rot=0):
     # Range to sample from original image
     old_x = max(0, ul[0]), min(len(img[0]), br[0])
     old_y = max(0, ul[1]), min(len(img), br[1])
-    new_img[new_y[0]:new_y[1], new_x[0]:new_x[1]] = img[old_y[0]:old_y[1], old_x[0]:old_x[1]]
+
+    new_img[new_y[0]:new_y[1], new_x[0]:new_x[1]] = img[old_y[0]:old_y[1], 
+                                                        old_x[0]:old_x[1]]
 
     if not rot == 0:
         # Remove padding
         new_img = skimage.transform.rotate(new_img, rot).astype(np.uint8)
         new_img = new_img[pad:-pad, pad:-pad]
 
-    new_img = np.array(Image.fromarray(new_img.astype(np.uint8)).resize(res))
-    
-    return new_img
+    new_img_resized = np.array(Image.fromarray(new_img.astype(np.uint8)).resize(res))
+    return new_img_resized, new_img, new_shape
 
 def uncrop(img, center, scale, orig_shape, rot=0, is_rgb=True):
     """'Undo' the image cropping/resizing.
@@ -103,18 +112,14 @@ def uncrop(img, center, scale, orig_shape, rot=0, is_rgb=True):
     if len(img.shape) > 2:
         new_shape += [img.shape[2]]
     new_img = np.zeros(orig_shape, dtype=np.uint8)
-    
     # Range to fill new array
     new_x = max(0, -ul[0]), min(br[0], orig_shape[1]) - ul[0]
     new_y = max(0, -ul[1]), min(br[1], orig_shape[0]) - ul[1]
-    
     # Range to sample from original image
     old_x = max(0, ul[0]), min(orig_shape[1], br[0])
     old_y = max(0, ul[1]), min(orig_shape[0], br[1])
-
     img = np.array(Image.fromarray(img.astype(np.uint8)).resize(crop_shape))
     new_img[old_y[0]:old_y[1], old_x[0]:old_x[1]] = img[new_y[0]:new_y[1], new_x[0]:new_x[1]]
-    
     return new_img
 
 def rot_aa(aa, rot):
@@ -137,18 +142,30 @@ def flip_img(img):
     img = np.fliplr(img)
     return img
 
-def flip_kp(kp, is_smpl=False):
+def flip_kp(kp, is_smpl=False, type='body'):
     """Flip keypoints."""
-    if len(kp) == 24:
-        if is_smpl:
-            flipped_parts = constants.SMPL_JOINTS_FLIP_PERM
-        else:
-            flipped_parts = constants.J24_FLIP_PERM
-    elif len(kp) == 49:
-        if is_smpl:
-            flipped_parts = constants.SMPL_J49_FLIP_PERM
-        else:
-            flipped_parts = constants.J49_FLIP_PERM
+    assert type in ['body', 'hand', 'face', 'feet']
+    if type == 'body':
+        if len(kp) == 24:
+            if is_smpl:
+                flipped_parts = constants.SMPL_JOINTS_FLIP_PERM
+            else:
+                flipped_parts = constants.J24_FLIP_PERM
+        elif len(kp) == 49:
+            if is_smpl:
+                flipped_parts = constants.SMPL_J49_FLIP_PERM
+            else:
+                flipped_parts = constants.J49_FLIP_PERM
+    elif type == 'hand':
+        if len(kp) == 21:
+            flipped_parts = constants.SINGLE_HAND_FLIP_PERM
+        elif len(kp) == 42:
+            flipped_parts = constants.LRHAND_FLIP_PERM
+    elif type == 'face':
+        flipped_parts = constants.FACE_FLIP_PERM
+    elif type == 'feet':
+        flipped_parts = constants.FEEF_FLIP_PERM
+    
     kp = kp[flipped_parts]
     kp[:,0] = - kp[:,0]
     return kp
@@ -164,6 +181,20 @@ def flip_pose(pose):
     pose[2::3] = -pose[2::3]
     return pose
 
+def flip_aa(pose):
+    """Flip aa.
+    """
+    # we also negate the second and the third dimension of the axis-angle
+    if len(pose.shape) == 1:
+        pose[1::3] = -pose[1::3]
+        pose[2::3] = -pose[2::3]
+    elif len(pose.shape) == 2:
+        pose[:, 1::3] = -pose[:, 1::3]
+        pose[:, 2::3] = -pose[:, 2::3]
+    else:
+        raise NotImplementedError
+    return pose
+
 def normalize_2d_kp(kp_2d, crop_size=224, inv=False):
     # Normalize keypoints between -1, 1
     if not inv:
@@ -174,6 +205,16 @@ def normalize_2d_kp(kp_2d, crop_size=224, inv=False):
         kp_2d = (kp_2d + 1.0)/(2*ratio)
 
     return kp_2d
+
+def j2d_processing(kp, transf):
+    """Process gt 2D keypoints and apply transforms."""
+    # nparts = kp.shape[1]
+    bs, npart = kp.shape[:2]
+    kp_pad = torch.cat([kp, torch.ones((bs, npart, 1)).to(kp)], dim=-1)
+    kp_new = torch.bmm(transf, kp_pad.transpose(1, 2))
+    kp_new = kp_new.transpose(1, 2)
+    kp_new[:, :, :-1] = 2.*kp_new[:, :, :-1] / constants.IMG_RES - 1.
+    return kp_new[:, :, :2]
 
 def generate_heatmap(joints, heatmap_size, sigma=1, joints_vis=None):
     '''
