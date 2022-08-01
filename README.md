@@ -1,4 +1,4 @@
-🚩 **[Update]** Demo code for PyMAF-X is now released! Please check out the smplx branch [here](https://github.com/HongwenZhang/PyMAF/tree/smplx)
+🚩 **[Update]** Demo code for PyMAF-X is now released! Please check out the `smplx` branch [here](https://github.com/HongwenZhang/PyMAF/tree/smplx) `git checkout smplx`
 
 🚩 **[Update]** PyMAF is now extended as [PyMAF-X](https://www.liuyebin.com/pymaf-x) for full-body model recovery! Please check out the new project page [here](https://www.liuyebin.com/pymaf-x)
 
