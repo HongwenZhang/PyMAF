@@ -1,17 +1,31 @@
-:wave::wave::wave: **[Update]** PyMAF is now extended as PyMAF-X for full-body model recovery. Check out the new project page [here](https://www.liuyebin.com/pymaf-x)
+🚩 **[Update]** Demo code for PyMAF-X is now released! Please check out the smplx branch [here](https://github.com/HongwenZhang/PyMAF/tree/smplx)
 
-# PyMAF
-This repository contains the code for the following paper:
+🚩 **[Update]** PyMAF is now extended as [PyMAF-X](https://www.liuyebin.com/pymaf-x) for full-body model recovery! Please check out the new project page [here](https://www.liuyebin.com/pymaf-x)
+
+# PyMAF & PyMAF-X
+This repository contains the code for the following papers:
+
+**PyMAF-X: Towards Well-aligned Full-body Model Regression from Monocular Images**  
+Hongwen Zhang, Yating Tian, Yuxiang Zhang, Mengcheng Li, Liang An, Zhenan Sun, Yebin Liu 
+
+arXiv, 2022
+
+[[Project Page]](https://www.liuyebin.com/pymaf-x) [[Paper]](https://arxiv.org/pdf/2207.06400.pdf) [[Code: smplx branch]](https://github.com/HongwenZhang/PyMAF/tree/smplx)
 
 **PyMAF: 3D Human Pose and Shape Regression with Pyramidal Mesh Alignment Feedback Loop**  
-Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, Zhenan Sun  
+Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, Zhenan Sun 
+
 \* Equal contribution
 
 ICCV, 2021 (Oral Paper)
 
-[[Project Page]](https://hongwenzhang.github.io/pymaf) [[Paper]](https://arxiv.org/pdf/2103.16507.pdf)
+[[Project Page]](https://hongwenzhang.github.io/pymaf) [[Paper]](https://arxiv.org/pdf/2103.16507.pdf) [Code: smpl branch]
+
+# Instruction for PyMAF
 
 <!-- [![PyMAF](https://hongwenzhang.github.io/images/pymaf.jpg "PyMAF")](https://hongwenzhang.github.io/pymaf) -->
+
+Preview of demo results:
 
 <p align="left">
     <img src="https://hongwenzhang.github.io/pymaf/files/flashmob.gif">
@@ -169,6 +183,13 @@ If this work is helpful in your research, please cite the following paper.
   author={Zhang, Hongwen and Tian, Yating and Zhou, Xinchi and Ouyang, Wanli and Liu, Yebin and Wang, Limin and Sun, Zhenan},
   booktitle={Proceedings of the IEEE International Conference on Computer Vision},
   year={2021}
+}
+
+@article{pymafx2022,
+  title={PyMAF-X: Towards Well-aligned Full-body Model Regression from Monocular Images},
+  author={Zhang, Hongwen and Tian, Yating and Zhang, Yuxiang and Li, Mengcheng and An, Liang and Sun, Zhenan and Liu, Yebin},
+  journal={arXiv preprint arXiv:2207.06400},
+  year={2022}
 }
 ```
 
