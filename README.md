@@ -13,7 +13,7 @@
     <br>
     <sup>Frame by frame reconstruction. Video clipped from <a href="https://www.youtube.com/watch?v=Ltt4dkRkSG0" target="_blank"><i>here</i></a>.</sup>
     <br>
-    <img src="https://hongwenzhang.github.io/pymaf-x/files/img_demo.png ">
+    <img src="https://hongwenzhang.github.io/pymaf-x/files/img_demo.png">
     <br>
     <sup>Reconstruction result on a COCO validation image.</sup>
     <br>
