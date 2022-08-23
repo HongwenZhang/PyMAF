@@ -638,7 +638,7 @@ def Rot_z(angle, category='torch', prepend_dim=True, device=None):
 		raise ValueError("category must be 'torch' or 'numpy'")
 
 
-def compute_twist_ratation(rotation_matrix, twist_axis):
+def compute_twist_rotation(rotation_matrix, twist_axis):
     '''
     Compute the twist component of given rotation and twist axis
     https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
@@ -663,25 +663,8 @@ def compute_twist_ratation(rotation_matrix, twist_axis):
     twist_quaternion = twist_quaternion / (torch.norm(twist_quaternion, dim=1, keepdim=True) + 1e-9)
 
     twist_rotation = quaternion_to_rotation_matrix(twist_quaternion)
-
-    # twist_angle0 = quaternion_to_angle(twist_quaternion)
-
     twist_aa = quaternion_to_angle_axis(twist_quaternion)
 
-    # twist_rotation2 = batch_rodrigues(twist_aa)
-
-    # print('twist_rotation2', torch.dist(twist_rotation2, twist_rotation))
-
     twist_angle = torch.sum(twist_aa, dim=1, keepdim=True) / torch.sum(twist_axis, dim=1, keepdim=True)
-
-    # print('norm', torch.dist(torch.norm(twist_axis * twist_angle, dim=1), torch.norm(twist_aa, dim=1)))
-    # exit()
-
-
-    # i = 1
-    # for i in range(len(twist_rotation2)):
-    #     print('twist aa', twist_angle[i], torch.norm(twist_axis * twist_angle, dim=1)[i], torch.norm(twist_aa, dim=1)[i], torch.dist(batch_rodrigues(twist_axis * twist_angle)[i], batch_rodrigues(twist_aa)[i]))
-    #     # print('twist aa', batch_rodrigues(-twist_axis * twist_angle)[i], batch_rodrigues(twist_aa)[i])
-    # exit()
 
     return twist_rotation, twist_angle

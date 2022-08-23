@@ -13,7 +13,7 @@ from core import constants
 from einops import rearrange
 
 from core.cfgs import cfg
-from utils.geometry import rot6d_to_rotmat, rotmat_to_rot6d, projection, rotation_matrix_to_angle_axis, rotmat_to_angle, compute_twist_ratation
+from utils.geometry import rot6d_to_rotmat, rotmat_to_rot6d, projection, rotation_matrix_to_angle_axis, rotmat_to_angle, compute_twist_rotation
 from .maf_extractor import MAF_Extractor, Mesh_Sampler
 from .smpl import SMPL, SMPLX, SMPLX_ALL, SMPL_MODEL_DIR, SMPL_MEAN_PARAMS, get_model_faces, get_partial_smpl, SMPL_Family
 from smplx.lbs import batch_rodrigues
@@ -394,8 +394,8 @@ class Regressor(nn.Module):
                                 lelbow_twist_axis = nn.functional.normalize(tpose_joints[:, 20] - tpose_joints[:, 18], dim=1)
                                 relbow_twist_axis = nn.functional.normalize(tpose_joints[:, 21] - tpose_joints[:, 19], dim=1)
 
-                                lelbow_twist, lelbow_twist_angle = compute_twist_ratation(opt_lwrist, lelbow_twist_axis)
-                                relbow_twist, relbow_twist_angle = compute_twist_ratation(opt_rwrist, relbow_twist_axis)
+                                lelbow_twist, lelbow_twist_angle = compute_twist_rotation(opt_lwrist, lelbow_twist_axis)
+                                relbow_twist, relbow_twist_angle = compute_twist_rotation(opt_rwrist, relbow_twist_axis)
 
                                 min_angle = -0.4 * float(np.pi)
                                 max_angle = 0.4 * float(np.pi)
