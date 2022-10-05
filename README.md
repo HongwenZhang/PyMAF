@@ -166,9 +166,9 @@ To perform training, we need to collect preprocessed files of training datasets 
 
 The preprocessed labels have the same format as SPIN and can be retrieved from [here](https://github.com/nkolot/SPIN#fetch-data). Please refer to [SPIN](https://github.com/nkolot/SPIN) for more details about data preprocessing.
 
-PyMAF is trained on Human3.6M at the first stage and then trained on the mixture of both 2D and 3D datasets at the second stage. Example usage:
+PyMAF is trained on COCO at the first stage and then trained on the mixture of both 2D and 3D datasets at the second stage. Example usage:
 ```
-# training on Human3.6M
+# training on COCO
 CUDA_VISIBLE_DEVICES=0 python3 train.py --regressor pymaf_net --single_dataset --misc TRAIN.BATCH_SIZE 64
 # training on mixed datasets
 CUDA_VISIBLE_DEVICES=0 python3 train.py --regressor pymaf_net --pretrained_checkpoint path/to/checkpoint_file.pt --misc TRAIN.BATCH_SIZE 64

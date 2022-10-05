@@ -9,8 +9,9 @@ from .base_dataset import BaseDataset
 
 class MixedDataset(torch.utils.data.Dataset):
     def __init__(self, options, **kwargs):
-        self.dataset_list = ['h36m', 'lsp-orig', 'mpii', 'lspet', 'coco', 'mpi-inf-3dhp']
-        self.dataset_dict = {'h36m': 0, 'lsp-orig': 1, 'mpii': 2, 'lspet': 3, 'coco': 4, 'mpi-inf-3dhp': 5}
+        self.dataset_list = ['h36m', 'lsp-orig', 'mpii', 'lspet', 'coco-full', 'mpi-inf-3dhp']
+        # self.dataset_list = ['h36m', 'lsp-orig', 'mpii', 'lspet', 'coco', 'mpi-inf-3dhp']
+        self.dataset_dict = {'h36m': 0, 'lsp-orig': 1, 'mpii': 2, 'lspet': 3, 'coco-full': 4, 'mpi-inf-3dhp': 5}
 
         self.datasets = [BaseDataset(options, ds, **kwargs) for ds in self.dataset_list]
         self.dataset_length = {self.dataset_list[idx]: len(ds) for idx, ds in enumerate(self.datasets)}
@@ -20,13 +21,20 @@ class MixedDataset(torch.utils.data.Dataset):
         Data distribution inside each batch:
         30% H36M - 60% ITW - 10% MPI-INF
         """
+        # self.partition = [
+        #                     .3,
+        #                     .6*len(self.datasets[1])/length_itw,
+        #                     .6*len(self.datasets[2])/length_itw,
+        #                     .6*len(self.datasets[3])/length_itw,
+        #                     .6*len(self.datasets[4])/length_itw,
+        #                     0.1]
         self.partition = [
-                            .3,
-                            .6*len(self.datasets[1])/length_itw,
-                            .6*len(self.datasets[2])/length_itw,
-                            .6*len(self.datasets[3])/length_itw,
-                            .6*len(self.datasets[4])/length_itw,
-                            0.1]
+                            .5,
+                            .3 * len(self.datasets[1]) / length_itw,
+                            .3 * len(self.datasets[2]) / length_itw,
+                            .3 * len(self.datasets[3]) / length_itw,
+                            .3 * len(self.datasets[4]) / length_itw,
+                            0.2]
         self.partition = np.array(self.partition).cumsum()
 
     def __getitem__(self, index):

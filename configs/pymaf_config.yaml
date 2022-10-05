@@ -22,13 +22,14 @@ LOSS:
   # Loss weights for UV regression.
   POINT_REGRESSION_WEIGHTS: 0.5
 TRAIN:
-  NUM_WORKERS: 8
+  NUM_WORKERS: 16
   BATCH_SIZE: 64
   PIN_MEMORY: True
 TEST:
   BATCH_SIZE: 32
 MODEL:
   PyMAF:
+    MAF_ON: False
     BACKBONE: 'res50'
     MLP_DIM: [256, 128, 64, 5]
     N_ITER: 3
@@ -45,3 +46,29 @@ RES_MODEL:
   - 4
   - 4
   - 4
+
+POSE_RES_MODEL:
+  INIT_WEIGHTS: True
+  NAME: 'pose_resnet'
+  PRETR_SET: 'coco'   # 'none' 'imagenet' 'coco'
+  # PRETRAINED: 'data/pretrained_model/resnet50-19c8e357.pth'
+  PRETRAINED_IM: 'data/pretrained_model/resnet50-19c8e357.pth'
+  PRETRAINED_COCO: 'data/pretrained_model/pose_resnet_50_256x192.pth.tar'
+  EXTRA:
+    TARGET_TYPE: 'gaussian'
+    HEATMAP_SIZE:
+    - 48
+    - 64
+    SIGMA: 2
+    FINAL_CONV_KERNEL: 1
+    DECONV_WITH_BIAS: False
+    NUM_DECONV_LAYERS: 3
+    NUM_DECONV_FILTERS:
+    - 256
+    - 256
+    - 256
+    NUM_DECONV_KERNELS:
+    - 4
+    - 4
+    - 4
+    NUM_LAYERS: 50
