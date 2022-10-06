@@ -36,7 +36,7 @@ from core.cfgs import cfg, parse_args
 from models import hmr, pymaf_net, SMPL
 from core import path_config, constants
 from datasets.inference import Inference
-from utils.renderer import OpenDRenderer, PyRenderer
+from utils.renderer import PyRenderer
 from utils.imutils import crop
 from utils.pose_tracker import run_posetracker
 from utils.demo_utils import (
@@ -92,10 +92,7 @@ def run_image_demo(args):
     model.eval()
 
     # Setup renderer for visualization
-    if args.use_opendr:
-        renderer = OpenDRenderer(resolution=(constants.IMG_RES, constants.IMG_RES))
-    else:
-        renderer = PyRenderer(resolution=(constants.IMG_RES, constants.IMG_RES))
+    renderer = PyRenderer(resolution=(constants.IMG_RES, constants.IMG_RES))
 
     # Preprocess input image and generate predictions
     img_np, img, norm_img = process_image(args.img_file, input_res=constants.IMG_RES)
@@ -120,7 +117,7 @@ def run_image_demo(args):
     # Render front-view shape
     save_mesh_path = None
     img_shape = renderer(
-                    pred_vertices[None, :, :] if args.use_opendr else pred_vertices,
+                    pred_vertices,
                     img=img_np,
                     cam=pred_camera[0].cpu().numpy(),
                     color_type='purple',
@@ -134,7 +131,7 @@ def run_image_demo(args):
     
     # Render side-view shape
     img_shape_side = renderer(
-                        rot_vertices[None, :, :] if args.use_opendr else rot_vertices,
+                        rot_vertices,
                         img=np.ones_like(img_np),
                         cam=pred_camera[0].cpu().numpy(),
                         color_type='purple',
@@ -396,10 +393,7 @@ def run_video_demo(args):
 
     if not args.no_render:
         # ========= Render results as a single video ========= #
-        if args.use_opendr:
-            renderer = OpenDRenderer(resolution=(orig_height, orig_width))
-        else:
-            renderer = PyRenderer(resolution=(orig_width, orig_height))
+        renderer = PyRenderer(resolution=(orig_width, orig_height))
 
         output_img_folder = os.path.join(output_path, osp.split(image_folder)[-1] + '_output')
         os.makedirs(output_img_folder, exist_ok=True)
@@ -452,7 +446,7 @@ def run_video_demo(args):
 
                 if args.empty_bg:
                     img, empty_img = renderer(
-                            frame_verts[None, :, :] if args.use_opendr else frame_verts,
+                            frame_verts,
                             img=[img, empty_img],
                             cam=frame_cam,
                             color_type=color_type,
@@ -460,7 +454,7 @@ def run_video_demo(args):
                         )
                 else:
                     img = renderer(
-                        frame_verts[None, :, :] if args.use_opendr else frame_verts,
+                        frame_verts,
                         img=img,
                         cam=frame_cam,
                         color_type=color_type,
@@ -547,8 +541,6 @@ if __name__ == '__main__':
                         help='visualize the results of each step during demo')
     parser.add_argument('--no_render', action='store_true',
                         help='disable final rendering of output video.')
-    parser.add_argument('--use_opendr', action='store_true',
-                        help='Use opendr to render the predicted SMPL instead of pyrender')
     parser.add_argument('--with_raw', action='store_true',
                         help='attach raw image.')
     parser.add_argument('--empty_bg', action='store_true',
