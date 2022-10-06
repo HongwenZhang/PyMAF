@@ -27,7 +27,7 @@ from utils.train_utils import print_args
 from utils.iuvmap import iuv_img2map, iuv_map2img
 
 try:
-    from utils.renderer import OpenDRenderer, IUV_Renderer
+    from utils.renderer import PyRenderer, IUV_Renderer
 except:
     print('fail to import Renderer.')
 
@@ -42,13 +42,19 @@ class Trainer(BaseTrainer):
             self.summary_writer.add_text('command_args', print_args())
 
         if self.options.regressor == 'hmr':
-            # HMR/SPIN model
+            # HMR/SPIN modelpy
             self.model = hmr(path_config.SMPL_MEAN_PARAMS, pretrained=True)
             self.smpl = SMPL(path_config.SMPL_MODEL_DIR,
                              batch_size=cfg.TRAIN.BATCH_SIZE,
                              create_transl=False).to(self.device)
         elif self.options.regressor == 'pymaf_net':
             # PyMAF model
+            self.smpl_male = SMPL(model_path=path_config.SMPL_MODEL_DIR,
+                                  gender='male',
+                                  create_transl=False).to(self.device)
+            self.smpl_female = SMPL(model_path=path_config.SMPL_MODEL_DIR,
+                                    gender='female',
+                                    create_transl=False).to(self.device)
             self.model = pymaf_net(path_config.SMPL_MEAN_PARAMS, pretrained=True)
             self.smpl = self.model.regressor[0].smpl
 
@@ -116,7 +122,8 @@ class Trainer(BaseTrainer):
             num_workers=self.options.workers,
             pin_memory=cfg.TRAIN.PIN_MEMORY,
             shuffle=(train_sampler is None),
-            sampler=train_sampler
+            sampler=train_sampler,
+            prefetch_factor=4
         )
 
         self.valid_loader = DataLoader(
@@ -125,16 +132,17 @@ class Trainer(BaseTrainer):
             shuffle=False,
             num_workers=cfg.TRAIN.NUM_WORKERS,
             pin_memory=cfg.TRAIN.PIN_MEMORY,
-            sampler=val_sampler
+            sampler=val_sampler,
+            prefetch_factor=4
         )
 
         # Load dictionary of fits
-        self.fits_dict = FitsDict(self.options, self.train_ds)
+        # self.fits_dict = FitsDict(self.options, self.train_ds)
         self.evaluation_accumulators = dict.fromkeys(['pred_j3d', 'target_j3d', 'target_theta', 'pred_verts', 'target_verts'])
 
         # Create renderer
         try:
-            self.renderer = OpenDRenderer()
+            self.renderer = PyRenderer()
         except:
             print('No renderer for visualization.')
             self.renderer = None
@@ -145,8 +153,8 @@ class Trainer(BaseTrainer):
         self.decay_steps_ind = 1
         self.decay_epochs_ind = 1
 
-    def finalize(self):
-        self.fits_dict.save()
+    # def finalize(self):
+    #     self.fits_dict.save()
 
     def keypoint_loss(self, pred_keypoints_2d, gt_keypoints_2d, openpose_weight, gt_weight):
         """ Compute 2D reprojection loss on the keypoints.
@@ -319,22 +327,23 @@ class Trainer(BaseTrainer):
         indices = input_batch['sample_index'] # index of example inside its dataset
         batch_size = images.shape[0]
 
+
         # Get GT vertices and model joints
         # Note that gt_model_joints is different from gt_joints as it comes from SMPL
         gt_out = self.smpl(betas=gt_betas, body_pose=gt_pose[:,3:], global_orient=gt_pose[:,:3])
         gt_model_joints = gt_out.joints
         gt_vertices = gt_out.vertices
-
-        # Get current best fits from the dictionary
-        opt_pose, opt_betas = self.fits_dict[(dataset_name, indices.cpu(), rot_angle.cpu(), is_flipped.cpu())]
-        opt_pose = opt_pose.to(self.device)
-        opt_betas = opt_betas.to(self.device)
-
-        # Replace extreme betas with zero betas
-        opt_betas[(opt_betas.abs() > 3).any(dim=-1)] = 0.
-        # Replace the optimized parameters with the ground truth parameters, if available
-        opt_pose[has_smpl, :] = gt_pose[has_smpl, :]
-        opt_betas[has_smpl, :] = gt_betas[has_smpl, :]
+        opt_pose, opt_betas = gt_pose, gt_betas
+        # # Get current best fits from the dictionary
+        # opt_pose, opt_betas = self.fits_dict[(dataset_name, indices.cpu(), rot_angle.cpu(), is_flipped.cpu())]
+        # opt_pose = opt_pose.to(self.device)
+        # opt_betas = opt_betas.to(self.device)
+        #
+        # # Replace extreme betas with zero betas
+        # opt_betas[(opt_betas.abs() > 3).any(dim=-1)] = 0.
+        # # Replace the optimized parameters with the ground truth parameters, if available
+        # opt_pose[has_smpl, :] = gt_pose[has_smpl, :]
+        # opt_betas[has_smpl, :] = gt_betas[has_smpl, :]
 
         opt_output = self.smpl(betas=opt_betas, body_pose=opt_pose[:,3:], global_orient=opt_pose[:,:3])
         opt_vertices = opt_output.vertices
@@ -353,12 +362,12 @@ class Trainer(BaseTrainer):
         opt_cam_t = estimate_translation(opt_joints, gt_keypoints_2d_orig, focal_length=self.focal_length, img_size=self.options.img_res)
 
         # get fitted smpl parameters as pseudo ground truth
-        valid_fit = self.fits_dict.get_vaild_state(dataset_name, indices.cpu()).to(torch.bool).to(self.device)
+        valid_fit = has_smpl
 
-        try:
-            valid_fit = valid_fit | has_smpl
-        except RuntimeError:
-            valid_fit = (valid_fit.byte() | has_smpl.byte()).to(torch.bool)
+        # try:
+        #     valid_fit = valid_fit | has_smpl
+        # except RuntimeError:
+        #     valid_fit = (valid_fit.byte() | has_smpl.byte()).to(torch.bool)
 
         # Render Dense Correspondences
         if self.options.regressor == 'pymaf_net' and cfg.MODEL.PyMAF.AUX_SUPV_ON:
@@ -531,6 +540,7 @@ class Trainer(BaseTrainer):
         # Regressor for H36m joints
         J_regressor = torch.from_numpy(np.load(path_config.JOINT_REGRESSOR_H36M)).float()
 
+        joint_mapper_h36m = constants.H36M_TO_J17 if self.options.eval_dataset == 'mpi-inf-3dhp' else constants.H36M_TO_J14
         joint_mapper_gt = constants.J24_TO_J17 if self.options.eval_dataset == 'mpi-inf-3dhp' else constants.J24_TO_J14
 
         if self.options.rank == 0:
@@ -538,15 +548,31 @@ class Trainer(BaseTrainer):
         for i, target in enumerate(self.valid_loader):
             if self.options.rank == 0:
                 pbar.update(1)
-            
+            inp = target['img'].to(self.device, non_blocking=True)
+            J_regressor_batch = J_regressor[None, :].expand(inp.shape[0], -1, -1).contiguous().to(self.device,
+                                                                                                  non_blocking=True)
             # Get GT vertices and model joints
             gt_betas = target['betas'].to(self.device)
             gt_pose = target['pose'].to(self.device)
-            gt_out = self.smpl(betas=gt_betas, body_pose=gt_pose[:,3:], global_orient=gt_pose[:,:3])
-            gt_model_joints = gt_out.joints
-            gt_vertices = gt_out.vertices
-            target['verts'] = gt_vertices.cpu()
-            
+            if 'h36m' in self.options.eval_dataset:
+                gt_out = self.mesh_model(betas=gt_betas, body_pose=gt_pose[:,3:], global_orient=gt_pose[:,:3])
+                gt_model_joints = gt_out.joints
+                gt_vertices = gt_out.vertices
+                target['verts'] = gt_vertices
+            elif '3dpw' in self.options.eval_dataset:
+                # For 3DPW get the 14 common joints from the rendered shape
+                gender = target['gender'].to(self.device)
+                gt_vertices = self.smpl_male(global_orient=gt_pose[:,:3], body_pose=gt_pose[:,3:], betas=gt_betas).vertices
+                gt_vertices_female = self.smpl_female(global_orient=gt_pose[:,:3], body_pose=gt_pose[:,3:], betas=gt_betas).vertices
+                gt_vertices[gender==1, :, :] = gt_vertices_female[gender==1, :, :]
+                gt_keypoints_3d = torch.matmul(J_regressor_batch, gt_vertices)
+                gt_pelvis = gt_keypoints_3d[:, [0],:].clone()
+                gt_keypoints_3d = gt_keypoints_3d[:, joint_mapper_h36m, :]
+                target_j3d = gt_keypoints_3d - gt_pelvis
+
+                target['target_j3d'] = target_j3d
+                target['verts'] = gt_vertices
+
             inp = target['img'].to(self.device, non_blocking=True)
             J_regressor_batch = J_regressor[None, :].expand(inp.shape[0], -1, -1).contiguous().to(self.device, non_blocking=True)
 
@@ -563,11 +589,15 @@ class Trainer(BaseTrainer):
                     n_kp = preds['kp_3d'].shape[-2]
                     pred_j3d = preds['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
 
-                    target_j3d = target['pose_3d'].numpy()
-                    target_j3d = target_j3d[:, joint_mapper_gt, :-1]
+                    if 'h36m' in self.options.eval_dataset:
+                        target_j3d = target['pose_3d'].cpu()
+                        target_j3d = target_j3d[:, joint_mapper_gt, :-1]
+                    elif '3dpw' in self.options.eval_dataset:
+                        target_j3d = target['target_j3d'].cpu()
 
                     pred_verts = preds['verts'].cpu().numpy()
-                    target_verts = target['verts'].numpy()
+                    target_verts=target['verts'].to('cpu')
+                    target_verts = target_verts.numpy()
 
                     batch_len = target['betas'].shape[0]
 
@@ -578,7 +608,7 @@ class Trainer(BaseTrainer):
 
                 if (i + 1) % cfg.VAL_VIS_BATCH_FREQ == 0 and self.options.rank == 0:
                     self.visualize(i, target, 'valid', pred_dict)
-            
+
             del pred_dict, _
 
             batch_time = time.time() - start

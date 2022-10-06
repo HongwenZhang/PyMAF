@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-
+from .pose_resnet import get_resnet_encoder
 from core.cfgs import cfg
 from utils.geometry import rot6d_to_rotmat, projection, rotation_matrix_to_angle_axis
 from .maf_extractor import MAF_Extractor
@@ -158,8 +158,8 @@ class PyMAF(nn.Module):
 
     def __init__(self, smpl_mean_params=SMPL_MEAN_PARAMS, pretrained=True):
         super().__init__()
-
-        self.feature_extractor = ResNet_Backbone(model=cfg.MODEL.PyMAF.BACKBONE, pretrained=pretrained)
+        self.global_mode = not cfg.MODEL.PyMAF.MAF_ON
+        self.feature_extractor = get_resnet_encoder(cfg, global_mode=self.global_mode)
 
         # deconv layers
         self.inplanes = self.feature_extractor.inplanes

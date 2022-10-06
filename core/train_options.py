@@ -13,7 +13,7 @@ class TrainOptions():
         io.add_argument('--pretrained_checkpoint', default=None, help='Load a pretrained checkpoint at the beginning training') 
 
         train = self.parser.add_argument_group('Training Options')
-        train.add_argument('--num_epochs', type=int, default=200, help='Total number of training epochs')
+        train.add_argument('--num_epochs', type=int, default=60, help='Total number of training epochs')
         train.add_argument('--regressor', type=str, choices=['hmr', 'pymaf_net'], default='pymaf_net', help='Name of the SMPL regressor.')
         train.add_argument('--cfg_file', type=str, default='./configs/pymaf_config.yaml', help='config file path for PyMAF.')
         train.add_argument('--img_res', type=int, default=224, help='Rescale bounding boxes to size [img_res, img_res] before feeding them in the network') 
@@ -22,9 +22,9 @@ class TrainOptions():
         train.add_argument('--scale_factor', type=float, default=0.25, help='Rescale bounding boxes by a factor of [1-scale_factor,1+scale_factor]') 
         train.add_argument('--openpose_train_weight', default=0., help='Weight for OpenPose keypoints during training') 
         train.add_argument('--gt_train_weight', default=1., help='Weight for GT keypoints during training')
-        train.add_argument('--eval_dataset', type=str, default='h36m-p2-mosh', help='Name of the evaluation dataset.')
+        train.add_argument('--eval_dataset', type=str, default='3dpw', help='Name of the evaluation dataset.')
         train.add_argument('--single_dataset', default=False, action='store_true', help='Use a single dataset')
-        train.add_argument('--single_dataname', type=str, default='h36m', help='Name of the single dataset.')
+        train.add_argument('--single_dataname', type=str, default='coco-full', help='Name of the single dataset.')
         train.add_argument('--eval_pve', default=False, action='store_true', help='evaluate PVE')
         train.add_argument('--overwrite', default=False, action='store_true', help='overwrite the latest checkpoint')
 
