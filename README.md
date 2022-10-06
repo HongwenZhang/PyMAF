@@ -33,9 +33,9 @@ Preview of demo results:
     <sup>Frame by frame reconstruction. Video clipped from <a href="https://www.youtube.com/watch?v=2DiQUX11YaY" target="_blank"><i>here</i></a>.</sup>
 </p>
 <p align="left">
-    <img src="https://hongwenzhang.github.io/pymaf/files/dancer_result.gif">
+    <img src="https://user-images.githubusercontent.com/12066626/194307352-7fe821fd-456a-4f06-b6c4-547531fdfd60.gif">
     <br>
-    <sup>Frame by frame reconstruction. Video clipped from <a href="https://youtu.be/xg_nXRHoqkE?t=65" target="_blank"><i>here</i></a>.</sup>
+    <sup>Frame by frame reconstruction. Video from <a href="https://twitter.com/jun40vn/status/1549318132967374850" target="_blank"><i>here</i></a>.</sup>
 </p>
 
 More results: [Click Here](https://hongwenzhang.github.io/pymaf)
