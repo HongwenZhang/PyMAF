@@ -17,7 +17,7 @@ try:
     import pyrender
     from pyrender.constants import RenderFlags
 except ModuleNotFoundError:
-    print('Failed to import *pyrender*. Please ignore the warning if opendr is appointed to render results.')
+    print('Failed to import *pyrender*. Please ignore the warning if there is no need to render results.')
 
 
 from pytorch3d.structures.meshes import Meshes
@@ -73,10 +73,10 @@ class PyRenderer:
         self.resolution = (resolution[0] * scale_ratio, resolution[1] * scale_ratio)
         # self.scale_ratio = scale_ratio
 
-        self.faces = {'smplx': get_model_faces('smplx'),
+        self.faces = {# 'smplx': get_model_faces('smplx'),
                       'smpl': get_model_faces('smpl'),
-                      'mano': get_model_faces('mano'),
-                      'flame': get_model_faces('flame'),
+                      # 'mano': get_model_faces('mano'),
+                      # 'flame': get_model_faces('flame'),
                       }
         self.orig_img = orig_img
         self.wireframe = wireframe
