@@ -42,21 +42,28 @@ More results: [Click Here](https://hongwenzhang.github.io/pymaf)
 
 ## Requirements
 
-- Python 3.6.10
+- Python 3.8
+```
+conda create --no-default-packages -n pymafx python=3.8
+conda activate pymafx
+```
 
 ### packages
 
-- [PyTorch](https://www.pytorch.org) tested on version 1.1.0
+- [PyTorch](https://www.pytorch.org) tested on version 1.9.0
+```
+conda install pytorch==1.9.0 torchvision==0.10.0 cudatoolkit=11.1 -c pytorch -c conda-forge
+```
 
-- [torchvision](https://www.pytorch.org) tested on version 0.3.0
-
-- [Neural Renderer](https://github.com/daniilidis-group/neural_renderer) (render densepose labels for training)
-
-- [opendr](https://gitlab.eecs.umich.edu/ngv-python-modules/opendr#) (visualization in training)
-
-- [pyrender](https://github.com/mmatl/pyrender) (optional for demo)
+- [pytorch3d](https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md)
+```
+pip install "git+https://github.com/facebookresearch/pytorch3d.git@stable"
+```
 
 - other packages listed in `requirements.txt`
+```
+pip install -r requirements.txt
+```
 
 ### necessary files
 
@@ -100,7 +107,7 @@ After collecting the above necessary files, the directory structure of `./data` 
 ```
 
 ## Demo
-[UPDATE] You can first give it a try on Google Colab using the notebook we have prepared, which is no need to prepare the environment yourself: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/11RXLsH9BdoSCwY6G-IX7KgqDxVoImu6K?usp=sharing)
+You can first give it a try on Google Colab using the notebook we have prepared, which is no need to prepare the environment yourself: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/11RXLsH9BdoSCwY6G-IX7KgqDxVoImu6K?usp=sharing)
 
 Run the demo code.
 
@@ -129,36 +136,14 @@ python3 demo.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --v
 python3 eval_coco.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt
 ```
 
-Results in [Average Precision (AP)](https://cocodataset.org/#keypoints-eval):
-
-| Method         | AP &uarr; | AP<sub>50</sub> &uarr; | AP<sub>75</sub> &uarr; | AP<sub>M</sub> &uarr; |   AP<sub>L</sub> &uarr; |
-|----------------|:------------:|:------------:|:------------:|:------------:|:------------:|
-| [HMR](https://github.com/akanazawa/hmr)     | 18.9 |   47.5 | 11.7 |  21.5 |  17.0 |  
-| [SPIN](https://github.com/nkolot/SPIN)     | 17.3 |   39.1  |  13.5 |   19.0  | 16.6  |
-| Baseline | 16.8  |  38.2 | 12.8 |  18.5   | 16.0 | 
-| PyMAF    | **24.6** |    **48.9**  | **22.7** |  **26.0** | **24.2** | 
-
-### Human3.6M / 3DPW
+### 3DPW
 
 Run the evaluation code. Using `--dataset` to specify the evaluation dataset.
 ```
 # Example usage:
-
-# Human3.6M Protocol 2
-python3 eval.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --dataset=h36m-p2 --log_freq=20
-
 # 3DPW
 python3 eval.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --dataset=3dpw --log_freq=20
 ```
-
-Results in Mean Per Joint Position Error (MPJPE):
-
-| Method         | 3DPW &darr; | H36M &darr; |
-|----------------|:------------:|:------------:|
-| [SPIN](https://github.com/nkolot/SPIN)       | 96.9 |    62.5 |
-| [VIBE](https://github.com/mkocabas/VIBE)      | 93.5 |    65.9  |
-| Baseline | 98.5 |  64.8 |
-| PyMAF    | **92.8** |    **57.7**  |
 
 ## Training
 
