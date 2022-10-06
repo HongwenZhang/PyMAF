@@ -156,7 +156,7 @@ class PyRenderer:
             if len(cam) == 4:
                 sx, sy, tx, ty = cam
                 # sy = sx
-                camera_translation = np.array([tx, ty, 2 * focal_length[0] / (resolution[0] * sy + 1e-9)])
+                camera_translation = np.array([- tx, ty, 2 * focal_length[0] / (resolution[0] * sy + 1e-9)])
             elif len(cam) == 3:
                 sx, tx, ty = cam
                 sy = sx
