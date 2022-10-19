@@ -1,6 +1,4 @@
-🚩 **[Update]** Demo code for PyMAF-X is now released! Please check out the `smplx` branch [here](https://github.com/HongwenZhang/PyMAF/tree/smplx) |  `git checkout smplx`
-
-🚩 **[Update]** PyMAF is now extended as [PyMAF-X](https://www.liuyebin.com/pymaf-x) for full-body model recovery! Please check out the new project page [here](https://www.liuyebin.com/pymaf-x)
+🚩 **[Update]** The compatible EFT label files are now available [here](https://cloud.tsinghua.edu.cn/d/635c717375664cd6b3f5), which helps to train a much stronger HMR baseline. See [issue #58](https://github.com/HongwenZhang/PyMAF/issues/58).
 
 # PyMAF & PyMAF-X
 This repository contains the code for the following papers:
@@ -80,7 +78,7 @@ bash fetch_data.sh
 
 > Fetch preprocessed data from [SPIN](https://github.com/nkolot/SPIN#fetch-data).
 
-> Fetch final_fits data from [SPIN](https://github.com/nkolot/SPIN#final-fits).
+> Fetch final_fits data from [SPIN](https://github.com/nkolot/SPIN#final-fits). [important note: using [EFT](https://github.com/facebookresearch/eft) fits for training is much better. Compatible npz files are available [here](https://cloud.tsinghua.edu.cn/d/635c717375664cd6b3f5)]
 
 > Download the [pre-trained model](https://drive.google.com/drive/folders/1R4_Vi4TpCQ26-6_b2PhjTBg-nBxZKjz6?usp=sharing) and put it into the `./data/pretrained_model` directory.
 
@@ -146,6 +144,8 @@ python3 eval.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --d
 ```
 
 ## Training
+
+🚀 **[Important update]: Using [EFT](https://github.com/facebookresearch/eft) fits is recommended, as it can significantly improve the baseline. Compatible data is available [here](https://cloud.tsinghua.edu.cn/d/635c717375664cd6b3f5). See [issue #58](https://github.com/HongwenZhang/PyMAF/issues/58) for more training details using the EFT labels.**
 
 To perform training, we need to collect preprocessed files of training datasets at first.
 
