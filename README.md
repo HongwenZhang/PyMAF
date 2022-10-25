@@ -147,11 +147,13 @@ python3 eval.py --checkpoint=data/pretrained_model/PyMAF_model_checkpoint.pt --d
 
 🚀 **[Important update]: Using [EFT](https://github.com/facebookresearch/eft) fits is recommended, as it can significantly improve the baseline. Compatible data is available [here](https://cloud.tsinghua.edu.cn/d/635c717375664cd6b3f5). See [issue #58](https://github.com/HongwenZhang/PyMAF/issues/58) for more training details using the EFT labels.**
 
+Below messages are the training details of the conference version of PyMAF.
+
 To perform training, we need to collect preprocessed files of training datasets at first.
 
 The preprocessed labels have the same format as SPIN and can be retrieved from [here](https://github.com/nkolot/SPIN#fetch-data). Please refer to [SPIN](https://github.com/nkolot/SPIN) for more details about data preprocessing.
 
-PyMAF is trained on COCO at the first stage and then trained on the mixture of both 2D and 3D datasets at the second stage. Example usage:
+PyMAF is trained on Human3.6M at the first stage and then trained on the mixture of both 2D and 3D datasets at the second stage. Example usage:
 ```
 # training on COCO
 CUDA_VISIBLE_DEVICES=0 python3 train.py --regressor pymaf_net --single_dataset --misc TRAIN.BATCH_SIZE 64
