@@ -708,7 +708,6 @@ class Trainer(BaseTrainer):
                 self.smpl.faces,
                 image=img_vis,
                 cam=cam_t,
-                addlight=True
             ))
 
             if cfg.MODEL.PyMAF.AUX_SUPV_ON:
@@ -733,7 +732,6 @@ class Trainer(BaseTrainer):
                     self.smpl.faces,
                     image=img_vis,
                     cam=cam_t,
-                    addlight=True
                 ))
 
             img = np.concatenate(render_imgs, axis=1)
