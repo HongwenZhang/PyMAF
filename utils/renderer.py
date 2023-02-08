@@ -19,6 +19,12 @@ try:
 except ModuleNotFoundError:
     print('Failed to import *pyrender*. Please ignore the warning if there is no need to render results.')
 
+try:
+    from opendr.renderer import ColoredRenderer
+    from opendr.lighting import LambertianPointLight, SphericalHarmonics
+    from opendr.camera import ProjectPoints
+except ModuleNotFoundError:
+    print('Failed to import *opendr*.')
 
 from pytorch3d.structures.meshes import Meshes
 # from pytorch3d.renderer.mesh.renderer import MeshRendererWithFragments
@@ -248,6 +254,148 @@ class PyRenderer:
 
         self.scene.remove_node(mesh_node)
         self.scene.remove_node(cam_node)
+
+        return return_img
+
+
+class OpenDRenderer:
+    def __init__(self, resolution=(224, 224), ratio=1):
+        self.resolution = (resolution[0] * ratio, resolution[1] * ratio)
+        self.ratio = ratio
+        self.focal_length = 5000.
+        self.K = np.array([[self.focal_length, 0., self.resolution[1] / 2.],
+                          [0., self.focal_length, self.resolution[0] / 2.],
+                          [0., 0., 1.]])
+        self.colors_dict = {
+            'red': np.array([0.5, 0.2, 0.2]),
+            'pink': np.array([0.7, 0.5, 0.5]),
+            'neutral': np.array([0.7, 0.7, 0.6]),
+            'purple': np.array([0.5, 0.5, 0.7]),
+            'green': np.array([0.5, 0.55, 0.3]),
+            'sky': np.array([0.3, 0.5, 0.55]),
+            'white': np.array([1.0, 0.98, 0.94]),
+        }
+        self.renderer = ColoredRenderer()
+        self.faces = get_smpl_faces()
+    
+    def reset_res(self, resolution):
+        self.resolution = (resolution[0] * self.ratio, resolution[1] * self.ratio)
+        self.K = np.array([[self.focal_length, 0., self.resolution[1] / 2.],
+                          [0., self.focal_length, self.resolution[0] / 2.],
+                          [0., 0., 1.]])
+
+    def __call__(self, verts, faces=None, color=None, color_type='white', R=None, mesh_filename=None,
+                img=np.zeros((224, 224, 3)), cam=np.array([1, 0, 0]),
+                rgba=False, addlight=True):
+        '''Render mesh using OpenDR
+        verts: shape - (V, 3)
+        faces: shape - (F, 3)
+        img: shape - (224, 224, 3), range - [0, 255] (np.uint8)
+        axis: rotate along with X/Y/Z axis (by angle)
+        R: rotation matrix (used to manipulate verts) shape - [3, 3]
+        Return:
+            rendered img: shape - (224, 224, 3), range - [0, 255] (np.uint8)
+        '''
+        ## Create OpenDR renderer
+        rn = self.renderer
+        h, w = self.resolution
+        K = self.K
+
+        f = np.array([K[0, 0], K[1, 1]])
+        c = np.array([K[0, 2], K[1, 2]])
+        
+        if faces == None:
+            faces = self.faces
+        if len(cam) == 4:
+            t = np.array([cam[2], cam[3], 2 * K[0, 0] / (w * cam[0] + 1e-9)])
+        elif len(cam) == 3:
+            t = np.array([cam[1], cam[2], 2 * K[0, 0] / (w * cam[0] + 1e-9)])
+    
+        rn.camera = ProjectPoints(rt=np.array([0, 0, 0]), t=t, f=f, c=c, k=np.zeros(5))
+        rn.frustum = {'near': 1., 'far': 1000., 'width': w, 'height': h}
+
+        albedo = np.ones_like(verts)*.9
+
+        if color is not None:
+            color0 = np.array(color)
+            color1 = np.array(color)
+            color2 = np.array(color)
+        elif color_type == 'white':
+            color0 = np.array([1., 1., 1.])
+            color1 = np.array([1., 1., 1.])
+            color2 = np.array([0.7, 0.7, 0.7])
+            color = np.ones_like(verts) * self.colors_dict[color_type][None, :]
+        else:
+            color0 = self.colors_dict[color_type] * 1.2
+            color1 = self.colors_dict[color_type] * 1.2
+            color2 = self.colors_dict[color_type] * 1.2
+            color = np.ones_like(verts) * self.colors_dict[color_type][None, :]
+
+        # render_smpl = rn.r
+        if R is not None:
+            assert R.shape == (3, 3), "Shape of rotation matrix should be (3, 3)"
+            verts = np.dot(verts, R)
+
+        rn.set(v=verts, f=faces, vc=color, bgcolor=np.zeros(3))
+
+        if addlight:
+            yrot = np.radians(120) # angle of lights
+            # # 1. 1. 0.7
+            rn.vc = LambertianPointLight(
+                f=rn.f,
+                v=rn.v,
+                num_verts=len(rn.v),
+                light_pos=rotateY(np.array([-200, -100, -100]), yrot),
+                vc=albedo,
+                light_color=color0)
+
+            # Construct Left Light
+            rn.vc += LambertianPointLight(
+                f=rn.f,
+                v=rn.v,
+                num_verts=len(rn.v),
+                light_pos=rotateY(np.array([800, 10, 300]), yrot),
+                vc=albedo,
+                light_color=color1)
+
+            # Construct Right Light
+            rn.vc += LambertianPointLight(
+                f=rn.f,
+                v=rn.v,
+                num_verts=len(rn.v),
+                light_pos=rotateY(np.array([-500, 500, 1000]), yrot),
+                vc=albedo,
+                light_color=color2)
+
+        rendered_image = rn.r
+        visibility_image = rn.visibility_image
+
+        image_list = [img] if type(img) is not list else img
+
+        return_img = []
+        for item in image_list:
+            if self.ratio != 1:
+                img_resized = resize(item, (item.shape[0] * self.ratio, item.shape[1] * self.ratio), anti_aliasing=True)
+            else:
+                img_resized = item / 255.
+
+            try:
+                img_resized[visibility_image != (2**32 - 1)] = rendered_image[visibility_image != (2**32 - 1)]
+            except:
+                logger.warning('Can not render mesh.')
+
+            img_resized = (img_resized * 255).astype(np.uint8)
+            res = img_resized
+
+            if rgba:
+                img_resized_rgba = np.zeros((img_resized.shape[0], img_resized.shape[1], 4))
+                img_resized_rgba[:, :, :3] = img_resized
+                img_resized_rgba[:, :, 3][visibility_image != (2**32 - 1)] = 255
+                res = img_resized_rgba.astype(np.uint8)
+            return_img.append(res)
+
+        if type(img) is not list:
+            return_img = return_img[0]
 
         return return_img
 
