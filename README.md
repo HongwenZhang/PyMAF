@@ -1,3 +1,5 @@
+🚩 **[Update]** The face part of PyMAF-X has been updated. See face-only evaluation results on [the NoW benchmark](https://now.is.tue.mpg.de/nonmetricalevaluation.html).
+
 <div align="center">
 
 # PyMAF-X: Towards Well-aligned Full-body Model Regression from Monocular Images
@@ -75,7 +77,7 @@ After collecting the above necessary files, the directory structure of `./data` 
 │   └── ***_vids.npz
 ├── pretrained_model
 │   └── PyMAF-X_model_checkpoint_v1.1.pt
-├── smpl
+└── smpl
     ├── FLAME2020
     │   ├── FLAME_NEUTRAL.pkl
     │   ├── flame_dynamic_embedding.npy
