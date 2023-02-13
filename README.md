@@ -57,7 +57,7 @@ bash fetch_data.sh
 ```
 > SMPL & SMPL-X model files
 
-- Collect SMPL and SMPL-X model files from [https://smpl.is.tue.mpg.de](https://smpl.is.tue.mpg.de) and [https://smpl-x.is.tue.mpg.de](https://smpl-x.is.tue.mpg.de). Rename model files and put them into the `./data/smpl` directory.
+- Collect [SMPL](https://smpl.is.tue.mpg.de)/[MANO](https://mano.is.tue.mpg.de)/[FLAME](https://flame.is.tue.mpg.de)/[SMPL-X](https://smpl-x.is.tue.mpg.de) model files. Rename model files and put them into the `./data/smpl` directory.
 
 > Download the [partial_mesh](https://cloud.tsinghua.edu.cn/d/3bc20811a93b488b99a9) files and put it into the `./data/partial_mesh` directory.
 
@@ -70,14 +70,22 @@ After collecting the above necessary files, the directory structure of `./data` 
 ├── smpl_mean_params.npz
 ├── smpl_downsampling.npz
 ├── mano_downsampling.npz
+├── flame_downsampling.npy
 ├── partial_mesh
 │   └── ***_vids.npz
 ├── pretrained_model
-│   └── PyMAF-X_model_checkpoint.pt
-└── smpl
-    ├── SMPLX_NEUTRAL.npz
+│   └── PyMAF-X_model_checkpoint_v1.1.pt
+├── smpl
+    ├── FLAME2020
+    │   ├── FLAME_NEUTRAL.pkl
+    │   ├── flame_dynamic_embedding.npy
+    │   └── flame_static_embedding.pkl
+    ├── MANO_RIGHT.pkl
+    ├── SMPLX_NEUTRAL_2020.npz
     ├── SMPL_NEUTRAL.pkl
     └── model_transfer
+        ├── MANO_SMPLX_vertex_ids.pkl
+        ├── SMPL-X__FLAME_vertex_ids.npy
         └── smplx_to_smpl.pkl
 ```
 
