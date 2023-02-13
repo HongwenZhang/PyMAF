@@ -90,11 +90,11 @@ Run the demo code.
 #### For image folder input:
 
 ```
-python -m apps.demo_smplx --image_folder examples/coco_images --detection_threshold 0.3 --pretrained_model data/pretrained_model/PyMAF-X_model_checkpoint_v1.1.pt --misc TRAIN.BHF_MODE full_body MODEL.EVAL_MODE True MODEL.PyMAF.HAND_VIS_TH 0.1
+python -m apps.demo_smplx --image_folder examples/coco_images --detection_threshold 0.3 --pretrained_model data/pretrained_model/PyMAF-X_model_checkpoint_v1.1.pt --misc TRAIN.BHF_MODE full_body MODEL.PyMAF.HAND_VIS_TH 0.1
 ```
 #### For video input:
 ```
-python -m apps.demo_smplx --vid_file examples/dancer_short.mp4 --pretrained_model data/pretrained_model/PyMAF-X_model_checkpoint_v1.1.pt --misc TRAIN.BHF_MODE full_body MODEL.EVAL_MODE True MODEL.PyMAF.HAND_VIS_TH 0.1
+python -m apps.demo_smplx --vid_file examples/dancer_short.mp4 --pretrained_model data/pretrained_model/PyMAF-X_model_checkpoint_v1.1.pt --misc TRAIN.BHF_MODE full_body MODEL.PyMAF.HAND_VIS_TH 0.1
 ```
 
 Results will be saved at `./output`. You can set different hyperparamters in the scripts, e.g., `--detection_threshold` for the person detection threshold and `MODEL.PyMAF.HAND_VIS_TH` for the hand visibility threshold.
