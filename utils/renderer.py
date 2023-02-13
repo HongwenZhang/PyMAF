@@ -1,7 +1,7 @@
 import imp
 import os
 from pickle import NONE
-os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
+# os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
 import torch
 import trimesh
 import numpy as np
@@ -17,12 +17,10 @@ import json
 from .geometry import convert_to_full_img_cam
 from utils.imutils import crop
 
-# try:
 import math
 import pyrender
 from pyrender.constants import RenderFlags
-# except:
-#     pass
+
 try:
     from opendr.renderer import ColoredRenderer
     from opendr.lighting import LambertianPointLight, SphericalHarmonics
@@ -31,7 +29,6 @@ except:
     pass
 
 from pytorch3d.structures.meshes import Meshes
-# from pytorch3d.renderer.mesh.renderer import MeshRendererWithFragments
 
 from pytorch3d.renderer import (
     look_at_view_transform,

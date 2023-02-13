@@ -36,14 +36,14 @@ TRAIN:
   USE_EFT: True
   USE_GT_CAM: False
   USE_ZERO_POSE: False
-  HF_LOSS_ON: False
+  HF_LOSS_ON: True
   BHF_MODE: 'full_body'
   FREEZE_ENCODER: ''
   FREEZE_PART: ''
   PW3D_RATIO: 0.2
   HR_IMG: False
   HF_ROOT_ALIGN: True
-  USE_CONTOUR_2DLMK: False
+  USE_CONTOUR_2DLMK: True
 TEST:
   BATCH_SIZE: 32
 DATA:

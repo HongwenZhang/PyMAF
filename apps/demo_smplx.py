@@ -59,7 +59,6 @@ from openpifpaf import network as ppnetwork
 from openpifpaf.predictor import Predictor
 from openpifpaf.stream import Stream
 
-from psbody.mesh import Mesh
 from os.path import join, expanduser
 
 
