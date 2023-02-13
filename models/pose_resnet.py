@@ -284,14 +284,14 @@ resnet_spec = {
     152: (Bottleneck, [3, 8, 36, 3])
 }
 
-def get_resnet_encoder(cfg, init_weight=True, global_mode=False, **kwargs):
+def get_resnet_encoder(cfg, is_train=True, global_mode=False, **kwargs):
     num_layers = cfg.POSE_RES_MODEL.EXTRA.NUM_LAYERS
 
     block_class, layers = resnet_spec[num_layers]
 
     model = PoseResNet(block_class, layers, cfg, global_mode, **kwargs)
 
-    if init_weight:
+    if is_train and cfg.POSE_RES_MODEL.INIT_WEIGHTS:
         if num_layers == 50:
             if cfg.POSE_RES_MODEL.PRETR_SET in ['imagenet']:
                 model.init_weights(cfg.POSE_RES_MODEL.PRETRAINED_IM)

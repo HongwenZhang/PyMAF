@@ -236,7 +236,6 @@ class EncoderBlock(BertPreTrainedModel):
         # torch.Size([2, 494, 1024]) 512 1024  
         #  torch.Size([2, 494, 256]) 512 256
 
-
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)
         else:
@@ -296,7 +295,7 @@ class EncoderBlock(BertPreTrainedModel):
 
         return outputs
 
-def get_att_block(img_feature_dim=2048, output_feat_dim=512, hidden_feat_dim=1024, num_attention_heads=4, num_hidden_layers=1):
+def get_att_block(img_feature_dim=2048, output_feat_dim=512, n_points=900, hidden_feat_dim=1024, num_attention_heads=4, num_hidden_layers=1):
 
     config_class = BertConfig
     config = config_class.from_pretrained('models/transformers/bert/bert-base-uncased/')
@@ -311,7 +310,10 @@ def get_att_block(img_feature_dim=2048, output_feat_dim=512, hidden_feat_dim=102
     config.intermediate_size = int(config.hidden_size * interm_size_scale)
     config.num_hidden_layers = num_hidden_layers
     config.num_attention_heads = num_attention_heads
-    config.max_position_embeddings = 900
+    if n_points > 900:
+        config.max_position_embeddings = n_points
+    else:
+        config.max_position_embeddings = 900
 
     # init a transformer encoder and append it to a list
     assert config.hidden_size % config.num_attention_heads == 0
@@ -320,39 +322,3 @@ def get_att_block(img_feature_dim=2048, output_feat_dim=512, hidden_feat_dim=102
 
     return att_model
 
-
-class Graphormer(BertPreTrainedModel):
-    '''
-    The archtecture of a transformer encoder block we used in Graphormer
-    '''
-    def __init__(self, config):
-        super(Graphormer, self).__init__(config)
-        self.config = config
-        self.bert = EncoderBlock(config)
-        self.cls_head = nn.Linear(config.hidden_size, self.config.output_feature_dim)
-        self.residual = nn.Linear(config.img_feature_dim, self.config.output_feature_dim)
-        self.apply(self.init_weights)
-
-    def forward(self, img_feats, input_ids=None, token_type_ids=None, attention_mask=None, masked_lm_labels=None,
-            next_sentence_label=None, position_ids=None, head_mask=None):
-        '''
-        # self.bert has three outputs
-        # predictions[0]: output tokens
-        # predictions[1]: all_hidden_states, if enable "self.config.output_hidden_states"
-        # predictions[2]: attentions, if enable "self.config.output_attentions"
-        '''
-        predictions = self.bert(img_feats=img_feats, input_ids=input_ids, position_ids=position_ids, token_type_ids=token_type_ids,
-                            attention_mask=attention_mask, head_mask=head_mask)
-
-        # We use "self.cls_head" to perform dimensionality reduction. We don't use it for classification.
-        pred_score = self.cls_head(predictions[0])
-        res_img_feats = self.residual(img_feats)
-        pred_score = pred_score + res_img_feats
-        # print('pred_score', pred_score.shape)
-
-        if self.config.output_attentions and self.config.output_hidden_states:
-            return pred_score, predictions[1], predictions[-1]
-        else:
-            return pred_score
-
- 

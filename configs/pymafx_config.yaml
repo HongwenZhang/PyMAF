@@ -5,7 +5,8 @@ SOLVER:
   GAMMA: 0.1
   STEPS: [0]
   EPOCHS: [0]
-# DEBUG: False
+DEBUG: False
+DEBUG_W_GT: False
 LOGDIR: ''
 DEVICE: cuda
 # NUM_WORKERS: 8
@@ -32,17 +33,39 @@ TRAIN:
   LOG_FERQ: 100
   SHUFFLE: True
   PIN_MEMORY: True
+  USE_EFT: True
+  USE_GT_CAM: False
+  USE_ZERO_POSE: False
+  HF_LOSS_ON: False
   BHF_MODE: 'full_body'
+  FREEZE_ENCODER: ''
+  FREEZE_PART: ''
+  PW3D_RATIO: 0.2
+  HR_IMG: False
+  HF_ROOT_ALIGN: True
+  USE_CONTOUR_2DLMK: False
 TEST:
   BATCH_SIZE: 32
+DATA:
+  RESCALE_B: 1.
+  RESCALE_H: 1.2
+  RESCALE_F: 1.4
 MODEL:
   # IWP, Identity rotation and Weak Perspective Camera
   USE_IWP_CAM: True
   USE_GT_FL: False
   PRED_PITCH: False
   MESH_MODEL: 'smplx'
+  MESH_V2020: True
+  N_BETAS_B: 10
+  N_BETAS_H: 10
+  N_BETAS_F: 100
+  N_EXP: 50
+  FACE_DENSE_SAM: True
+  ADD_GENDER: False
+  VPOSER_ON: False
+  HAND_PCA_ON: False
   ALL_GENDER: False
-  EVAL_MODE: False
   PyMAF:
     BACKBONE: 'hr48'
     HF_BACKBONE: 'res50'
@@ -54,16 +77,20 @@ MODEL:
     SUPV_LAST: False
     AUX_SUPV_ON: True
     HF_AUX_SUPV_ON: False
-    HF_BOX_CENTER: True
+    HF_BOX_ALIGN: False
     DP_HEATMAP_SIZE: 56
+    SEG_ON: False
+    SEG_LAST: False
     GRID_FEAT: False
     USE_CAM_FEAT: True
     HF_IMG_SIZE: 224
-    HF_DET: 'pifpaf'
-    OPT_WRIST: True
+    ADD_GRID: False
+    OPT_WRIST: True     # correct wrist rotation
     ADAPT_INTEGR: True
     PRED_VIS_H: True
-    HAND_VIS_TH: 0.1
+    HAND_VIS_TH: 0.1     # visible threshold for correcting wrist rotation
+    OPT_HEAD: False      # correct head rotation
+    HEAD_VIS_TH: 0.5     # visible threshold for correcting head rotation
     GRID_ALIGN:
       USE_ATT: True
       USE_FC: False

@@ -105,19 +105,13 @@ class Inference(Dataset):
 
             joints_part = {'lhand': joints2d_lhand, 'rhand': joints2d_rhand, 'face': joints2d_face}
 
+            self.vis_part = {'lhand': wb_kps['vis_lhand'], 'rhand': wb_kps['vis_rhand'], 'face': wb_kps['vis_face']}
+
             self.bboxes_part = {}
             self.joints2d_part = {}
 
             for part, joints in joints_part.items():
-                # print('joints2d part', part, type(joints), joints[0].shape)
-                # bboxes, time_pt1, time_pt2 = get_all_bbox_params(joints, vis_thresh=-1)
-                # bboxes[:, 2:] = 150. / bboxes[:, 2:]
-                # self.bboxes_part[part] = np.stack([bboxes[:, 0], bboxes[:, 1], bboxes[:, 2], bboxes[:, 2]]).T
-                # self.joints2d_part[part] = joints[time_pt1:time_pt2]
                 self.joints2d_part[part] = joints
-                if len(self.joints2d_part[part]) == 0:
-                    print('part 0000', part, time_pt1, time_pt2, joints[time_pt1:time_pt2])
-                    exit()
 
 
     def __len__(self):
@@ -126,17 +120,12 @@ class Inference(Dataset):
 
     def rgb_processing(self, rgb_img, center, scale, res, rot=0., flip=0):
         """Process rgb image and do augmentation."""
-        # in the rgb image we add pixel noise in a channel-wise manner
-        # rgb_img[:,:,0] = np.minimum(255.0, np.maximum(0.0, rgb_img[:,:,0]*pn[0]))
-        # rgb_img[:,:,1] = np.minimum(255.0, np.maximum(0.0, rgb_img[:,:,1]*pn[1]))
-        # rgb_img[:,:,2] = np.minimum(255.0, np.maximum(0.0, rgb_img[:,:,2]*pn[2]))
         # crop
         crop_img_resized, crop_img, crop_shape = crop(rgb_img, center, scale, res, rot=rot)
         # flip the image
         if flip:
             crop_img_resized = flip_img(crop_img_resized)
             crop_img = flip_img(crop_img)
-            # rgb_img = flip_img(rgb_img)
         # (3,224,224),float,[0,1]
         crop_img_resized = np.transpose(crop_img_resized.astype('float32'), (2,0,1)) / 255.0
         crop_img = np.transpose(crop_img.astype('float32'), (2,0,1)) / 255.0
@@ -209,10 +198,9 @@ class Inference(Dataset):
             center = [(bbox[2] + bbox[0]) / 2., (bbox[3] + bbox[1]) / 2.]
             sc = 1.2 * max(bbox[2] - bbox[0], bbox[3] - bbox[1]) / 200.
 
-            img, _, crop_shape = self.rgb_processing(img_orig, center, sc*scale, [constants.IMG_RES, constants.IMG_RES])
+            sc *= cfg.DATA.RESCALE_B
 
-            # crop_img = np.transpose(img.astype('float32'), (1,2,0)) * 255.
-            # cv2.imwrite('notebooks/output/body_img.png', crop_img.astype(np.uint8))
+            img, _, crop_shape = self.rgb_processing(img_orig, center, sc*scale, [constants.IMG_RES, constants.IMG_RES])
 
             # Store image before normalization to use it in visualization
             item['img_body'] = self.normalize_img(torch.from_numpy(img).float())
@@ -222,78 +210,93 @@ class Inference(Dataset):
             item['person_id'] = self.person_ids[idx]
 
             img_hr, img_crop, _ = self.rgb_processing(img_orig, center, sc*scale, [constants.IMG_RES * 8, constants.IMG_RES * 8])
-            # print('img_hr', img_hr.shape)
-            # img_orig = flip_img(img_orig) if flip else img_orig
-            # img_orig = np.transpose(img_orig.astype('float32'), (2,0,1)) / 255.0
-            # item['img_orig'] = self.normalize_img(torch.from_numpy(img_orig).float())
 
             kps_transf = get_transform(center, sc * scale, [constants.IMG_RES, constants.IMG_RES], rot=rot)
-            # rot_transf = get_rot_transf([constants.IMG_RES, constants.IMG_RES], rot)
-
-            # item['scale'] = float(sc * scale)
-            # item['center'] = center.astype(np.float32) 
-
-            # item['kps_transf'] = get_transform(center, sc * scale, [constants.IMG_RES, constants.IMG_RES], rot=rot).astype(np.float32)
-            # item['rot_transf'] = rot_transf.astype(np.float32)
 
             lhand_kp2d, rhand_kp2d, face_kp2d = self.joints2d_part['lhand'][idx], self.joints2d_part['rhand'][idx], self.joints2d_part['face'][idx]
 
-            hand_kp2d = self.j2d_processing(np.concatenate([lhand_kp2d, rhand_kp2d]).copy(), kps_transf, flip, is_hand=True)
-            face_kp2d = self.j2d_processing(face_kp2d.copy(), kps_transf, flip, is_face=True)
+            if cfg.MODEL.PyMAF.HF_BOX_ALIGN:
 
-            n_hand_kp = len(constants.HAND_NAMES)
-            # item['lhand_kp2d'] = hand_kp2d[:n_hand_kp]
-            # item['rhand_kp2d'] = hand_kp2d[n_hand_kp:]
-            # item['face_kp2d'] = face_kp2d
+                hand_kp2d = self.j2d_processing(np.concatenate([lhand_kp2d, rhand_kp2d]).copy(), kps_transf, flip, is_hand=True)
+                face_kp2d = self.j2d_processing(face_kp2d.copy(), kps_transf, flip, is_face=True)
 
-            # part_kp2d_dict = {'lhand': item['lhand_kp2d'], 'rhand': item['rhand_kp2d'], 'face': item['face_kp2d']}
-            part_kp2d_dict = {'lhand': hand_kp2d[:n_hand_kp], 'rhand': hand_kp2d[n_hand_kp:], 'face': face_kp2d}
+                n_hand_kp = len(constants.HAND_NAMES)
 
-            for part in ['lhand', 'rhand', 'face']:
-                kp2d = part_kp2d_dict[part]
-                # kp2d_valid = kp2d[kp2d[:, 2]>0.005]
-                kp2d_valid = kp2d[kp2d[:, 2]>0.]
-                if len(kp2d_valid) > 0:
-                    bbox = [min(kp2d_valid[:, 0]), min(kp2d_valid[:, 1]),
-                            max(kp2d_valid[:, 0]), max(kp2d_valid[:, 1])]
-                    center_part = [(bbox[2] + bbox[0]) / 2., (bbox[3] + bbox[1]) / 2.]
-                    scale_part = 2. * max(bbox[2] - bbox[0], bbox[3] - bbox[1]) / 2
+                part_kp2d_dict = {'lhand': hand_kp2d[:n_hand_kp], 'rhand': hand_kp2d[n_hand_kp:], 'face': face_kp2d}
 
-                # handle invalid part keypoints
-                if len(kp2d_valid) < 1 or scale_part < 0.01:
-                    center_part = [0, 0]
-                    scale_part = 0.5
-                    kp2d[:, 2] = 0
+                for part in ['lhand', 'rhand', 'face']:
+                    kp2d = part_kp2d_dict[part]
+                    kp2d_valid = kp2d[kp2d[:, 2]>0.]
+                    if len(kp2d_valid) > 0:
+                        bbox = [min(kp2d_valid[:, 0]), min(kp2d_valid[:, 1]),
+                                max(kp2d_valid[:, 0]), max(kp2d_valid[:, 1])]
+                        center_part = [(bbox[2] + bbox[0]) / 2., (bbox[3] + bbox[1]) / 2.]
+                        scale_part = 2. * max(bbox[2] - bbox[0], bbox[3] - bbox[1]) / 2
 
-                center_part = torch.tensor(center_part).float()
+                    # handle invalid part keypoints
+                    if len(kp2d_valid) < 1 or scale_part < 0.01:
+                        center_part = [0, 0]
+                        scale_part = 0.5
+                        kp2d[:, 2] = 0
 
-                theta_part = torch.zeros(1, 2, 3)
-                theta_part[:, 0, 0] = scale_part
-                theta_part[:, 1, 1] = scale_part
-                theta_part[:, :, -1] = center_part
+                    center_part = torch.tensor(center_part).float()
 
-                crop_hf_img_size = torch.Size([1, 3, cfg.MODEL.PyMAF.HF_IMG_SIZE, cfg.MODEL.PyMAF.HF_IMG_SIZE])
-                grid = F.affine_grid(theta_part.detach(), crop_hf_img_size, align_corners=False)
-                img_part = F.grid_sample(torch.from_numpy(img_crop[None]), grid.cpu(), align_corners=False).squeeze(0)
+                    theta_part = torch.zeros(1, 2, 3)
+                    theta_part[:, 0, 0] = scale_part
+                    theta_part[:, 1, 1] = scale_part
+                    theta_part[:, :, -1] = center_part
 
-                item[f'img_{part}'] = self.normalize_img(img_part.float())
+                    crop_hf_img_size = torch.Size([1, 3, cfg.MODEL.PyMAF.HF_IMG_SIZE, cfg.MODEL.PyMAF.HF_IMG_SIZE])
+                    grid = F.affine_grid(theta_part.detach(), crop_hf_img_size, align_corners=False)
+                    img_part = F.grid_sample(torch.from_numpy(img_crop[None]), grid.cpu(), align_corners=False).squeeze(0)
 
-                theta_i_inv = torch.zeros_like(theta_part)
-                theta_i_inv[:, 0, 0] = 1. / theta_part[:, 0, 0]
-                theta_i_inv[:, 1, 1] = 1. / theta_part[:, 1, 1]
-                theta_i_inv[:, :, -1] = - theta_part[:, :, -1] / theta_part[:, 0, 0].unsqueeze(-1)
+                    item[f'img_{part}'] = self.normalize_img(img_part.float())
 
-                # kp2d = torch.from_numpy(kp2d[None])
-                # part_kp2d = torch.bmm(theta_i_inv, homo_vector(kp2d[:, :, :2]).permute(0, 2, 1)).permute(0, 2, 1)
-                # part_kp2d = torch.cat([part_kp2d, kp2d[:, :, 2:3]], dim=-1).squeeze(0)
+                    theta_i_inv = torch.zeros_like(theta_part)
+                    theta_i_inv[:, 0, 0] = 1. / theta_part[:, 0, 0]
+                    theta_i_inv[:, 1, 1] = 1. / theta_part[:, 1, 1]
+                    theta_i_inv[:, :, -1] = - theta_part[:, :, -1] / theta_part[:, 0, 0].unsqueeze(-1)
 
-                # item[f'{part}_kp2d_local'] = part_kp2d
-                # item[f'{part}_theta'] = theta_part[0]
-                item[f'{part}_theta_inv'] = theta_i_inv[0]
+                    item[f'{part}_theta_inv'] = theta_i_inv[0]
+
+                    if part in self.vis_part:
+                        item[f'vis_{part}'] = self.vis_part[part][idx]
+            else:
+                n_hand_kp = len(constants.HAND_NAMES)
+                assert len(lhand_kp2d) == n_hand_kp
+                assert len(rhand_kp2d) == n_hand_kp
+
+                part_kp2d_dict = {'lhand': lhand_kp2d, 'rhand': rhand_kp2d, 'face': face_kp2d}
+
+                for part in ['lhand', 'rhand', 'face']:
+                    kp2d = part_kp2d_dict[part]
+                    kp2d_valid = kp2d[kp2d[:, 2]>0.]
+                    if len(kp2d_valid) > 0:
+                        bbox = [min(kp2d_valid[:, 0]), min(kp2d_valid[:, 1]),
+                                max(kp2d_valid[:, 0]), max(kp2d_valid[:, 1])]
+                        center_part = [(bbox[2] + bbox[0]) / 2., (bbox[3] + bbox[1]) / 2.]
+                        scale_part = 1.2 * max(bbox[2] - bbox[0], bbox[3] - bbox[1]) / 200.
+
+                        if part in ['lhand', 'rhand']:
+                            scale_part *= cfg.DATA.RESCALE_H
+                        elif part in ['face']:
+                            scale_part *= cfg.DATA.RESCALE_F
+
+                    # handle invalid part keypoints
+                    if len(kp2d_valid) < 1 or scale_part < 0.01:
+                        center_part = [0, 0]
+                        scale_part = 0.5
+                        kp2d[:, 2] = 0
+
+                    img_part, _, crop_shape = self.rgb_processing(img_orig, center_part, scale_part, [constants.IMG_RES, constants.IMG_RES])
+
+                    item[f'img_{part}'] = self.normalize_img(torch.from_numpy(img_part).float())
+
+                    if part in self.vis_part:
+                        item[f'vis_{part}'] = self.vis_part[part][idx]
 
             return item
 
-            # return [item[k] for k in ['img', 'img_lhand', 'img_rhand', 'img_face', 'lhand_theta_inv', 'rhand_theta_inv', 'face_theta_inv']]
 
 class ImageFolder(Dataset):
     def __init__(self, image_folder):
@@ -310,3 +313,4 @@ class ImageFolder(Dataset):
     def __getitem__(self, idx):
         img = cv2.cvtColor(cv2.imread(self.image_file_names[idx]), cv2.COLOR_BGR2RGB)
         return to_tensor(img)
+

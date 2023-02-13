@@ -28,6 +28,7 @@ from collections import OrderedDict
 from utils.smooth_bbox import get_smooth_bbox_params, get_all_bbox_params
 from datasets.data_utils.img_utils import get_single_image_crop_demo
 from utils.geometry import rotation_matrix_to_angle_axis
+# from smplify.temporal_smplify import TemporalSMPLify
 
 
 def preprocess_video(video, joints2d, bboxes, frames, scale=1.0, crop_size=224):

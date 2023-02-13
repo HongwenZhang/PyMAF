@@ -377,10 +377,6 @@ def rotmat_to_angle(x):
     return angle
 
 def projection(pred_joints, pred_camera, retain_z=False, iwp_mode=True):
-    """ Project 3D points on the image plane based on the given camera info, 
-        Identity rotation and Weak Perspective (IWP) camera is used when iwp_mode=True, more about camera settings:
-        SPEC: Seeing People in the Wild with an Estimated Camera, ICCV 2021
-    """
 
     batch_size = pred_joints.shape[0]
     if iwp_mode:

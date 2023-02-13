@@ -1,7 +1,7 @@
 import imp
 import os
 from pickle import NONE
-# os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
+os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
 import torch
 import trimesh
 import numpy as np
@@ -17,12 +17,12 @@ import json
 from .geometry import convert_to_full_img_cam
 from utils.imutils import crop
 
-try:
-    import math
-    import pyrender
-    from pyrender.constants import RenderFlags
-except:
-    pass
+# try:
+import math
+import pyrender
+from pyrender.constants import RenderFlags
+# except:
+#     pass
 try:
     from opendr.renderer import ColoredRenderer
     from opendr.lighting import LambertianPointLight, SphericalHarmonics
@@ -86,8 +86,8 @@ class PyRenderer:
 
         self.faces = {'smplx': get_model_faces('smplx'),
                       'smpl': get_model_faces('smpl'),
-                    #   'mano': get_model_faces('mano'),
-                    #   'flame': get_model_faces('flame'),
+                      'mano': get_model_faces('mano'),
+                      'flame': get_model_faces('flame'),
                       }
         self.orig_img = orig_img
         self.wireframe = wireframe
@@ -156,7 +156,8 @@ class PyRenderer:
         if mesh_filename is not None:
             mesh.export(mesh_filename)
 
-        if angle and axis:
+        if angle is not None:
+            assert axis is not None
             R = trimesh.transformations.rotation_matrix(math.radians(angle), axis)
             mesh.apply_transform(R)
 
@@ -225,11 +226,15 @@ class PyRenderer:
             render_flags = RenderFlags.RGBA | RenderFlags.SHADOWS_SPOT
 
         rgb, _ = self.renderer.render(self.scene, flags=render_flags)
+        valid_mask = (rgb[:, :, -1] > 0)[:, :, np.newaxis]
+        if os.environ['PYOPENGL_PLATFORM'] == 'egl':
+            rgb = rgb[:, :, :-1]  # (H, W, 4)  -> (H, W, 3)
+        else:
+            pass
+
         if crop_info is not None and crop_img:
             crop_res = img.shape[:2]
             rgb, _, _ = crop(rgb, crop_info['bbox_center'][0], crop_info['bbox_scale'][0], crop_res)
-
-        valid_mask = (rgb[:, :, -1] > 0)[:, :, np.newaxis]
 
         image_list = [img] if type(img) is not list else img
 
@@ -239,7 +244,7 @@ class PyRenderer:
                 orig_size = item.shape[:2]
                 item = resize(item, (orig_size[0] * scale_ratio, orig_size[1] * scale_ratio), anti_aliasing=True)
                 item = (item * 255).astype(np.uint8)
-            output_img = rgb[:, :, :-1] * valid_mask * self.vis_ratio + (1 - valid_mask * self.vis_ratio) * item
+            output_img = rgb * valid_mask * self.vis_ratio + (1 - valid_mask * self.vis_ratio) * item
             # output_img[valid_mask < 0.5] = item[valid_mask < 0.5]
             # if scale_ratio != 1:
             #     output_img = resize(output_img, (orig_size[0], orig_size[1]), anti_aliasing=True)

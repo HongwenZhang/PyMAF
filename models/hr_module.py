@@ -486,10 +486,10 @@ class PoseHighResolutionNet(nn.Module):
             raise ValueError('{} is not exist!'.format(pretrained))
 
 
-def get_hrnet_encoder(cfg, init_weight=True, global_mode=False, **kwargs):
+def get_hrnet_encoder(cfg, is_train=True, global_mode=False, **kwargs):
     model = PoseHighResolutionNet(cfg, global_mode=global_mode)
 
-    if init_weight:
+    if is_train and cfg.HR_MODEL.INIT_WEIGHTS:
         if cfg.HR_MODEL.PRETR_SET in ['imagenet']:
             model.init_weights(cfg.HR_MODEL.PRETRAINED_IM)
             logger.info('loaded HRNet imagenet pretrained model')

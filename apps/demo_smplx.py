@@ -39,8 +39,8 @@ from torchvision.transforms import Normalize
 from collections import OrderedDict
 
 from core.cfgs import cfg, parse_args
-from models import hmr, pymaf_net, SMPL
-from models.smpl import get_partial_smpl
+from models import hmr, pymaf_net
+from models.smpl import get_partial_smpl, SMPL, SMPLX
 from core import path_config, constants
 from datasets.inference import Inference
 from utils.renderer import PyRenderer
@@ -58,6 +58,9 @@ from openpifpaf import network as ppnetwork
 
 from openpifpaf.predictor import Predictor
 from openpifpaf.stream import Stream
+
+from psbody.mesh import Mesh
+from os.path import join, expanduser
 
 
 MIN_NUM_FRAMES = 1
@@ -152,7 +155,8 @@ def run_demo(args):
     tracking_results = {}
     print('Running openpifpaf for person detection...')
     for preds, _, meta in tqdm(capture, total=num_frames // args.detector_batch_size):
-        # preds = [preds[0]]
+        if args.single_person:
+            preds = [preds[0]]
         for pid, ann in enumerate(preds):
             if ann.score > args.detection_threshold:
                 frame_i = meta['frame_i'] - 1 if 'frame_i' in meta else meta['dataset_index']
@@ -167,23 +171,36 @@ def run_demo(args):
                             'joints2d_lhand': [det_wb_kps[91:112]],
                             'joints2d_rhand': [det_wb_kps[112:133]],
                             'joints2d_face': [np.concatenate([det_face_kps[17:], det_face_kps[:17]])],
+                            'vis_face': [np.mean(det_face_kps[17:, -1])],
+                            'vis_lhand': [np.mean(det_wb_kps[91:112, -1])],
+                            'vis_rhand': [np.mean(det_wb_kps[112:133, -1])],
                         }
     pkle.dump(tracking_results, open(pp_det_file_path, 'wb'))
 
     bbox_scale = 1.0
 
     # ========= Define model ========= #
-    model = pymaf_net(path_config.SMPL_MEAN_PARAMS, pretrained=True).to(device)
+    model = pymaf_net(path_config.SMPL_MEAN_PARAMS, is_train=False).to(device)
 
     # ========= Load pretrained weights ========= #
+    checkpoint_paths = {'body': args.pretrained_body, 'hand': args.pretrained_hand, 'face': args.pretrained_face}
     if args.pretrained_model is not None:
         print(f'Loading pretrained weights from \"{args.pretrained_model}\"')
         checkpoint = torch.load(args.pretrained_model)
-        model.load_state_dict(checkpoint['model'], strict=False)
+
+        # remove the state_dict overrode by hand and face sub-models
+        for part in ['hand', 'face']:
+            if checkpoint_paths[part] is not None:
+                key_start_list = model.part_module_names[part].keys()
+                for key in list(checkpoint['model'].keys()):
+                    for key_start in key_start_list:
+                        if key.startswith(key_start):
+                            checkpoint['model'].pop(key)
+
+        model.load_state_dict(checkpoint['model'], strict=True)
         print(f'loaded checkpoint: {args.pretrained_model}')
 
-    if args.pretrained_body is not None:
-        checkpoint_paths = {'body': args.pretrained_body, 'hand': args.pretrained_hand, 'face': args.pretrained_face}
+    if not all([args.pretrained_body is None, args.pretrained_hand is None, args.pretrained_face is None]):
         for part in ['body', 'hand', 'face']:
             checkpoint_path = checkpoint_paths[part]
             if checkpoint_path is not None:
@@ -233,6 +250,9 @@ def run_demo(args):
             wb_kps = {'joints2d_lhand': [],
                       'joints2d_rhand': [],
                       'joints2d_face': [],
+                      'vis_face': [],
+                      'vis_lhand': [],
+                      'vis_rhand': [],
                      }
         person_id_list = list(tracking_results.keys())
         for person_id in person_id_list:
@@ -243,6 +263,9 @@ def run_demo(args):
                 wb_kps['joints2d_lhand'].extend(tracking_results[person_id]['joints2d_lhand'])
                 wb_kps['joints2d_rhand'].extend(tracking_results[person_id]['joints2d_rhand'])
                 wb_kps['joints2d_face'].extend(tracking_results[person_id]['joints2d_face'])
+                wb_kps['vis_lhand'].extend(tracking_results[person_id]['vis_lhand'])
+                wb_kps['vis_rhand'].extend(tracking_results[person_id]['vis_rhand'])
+                wb_kps['vis_face'].extend(tracking_results[person_id]['vis_face'])
 
             frames.extend(tracking_results[person_id]['frames'])
 
@@ -293,7 +316,6 @@ def run_demo(args):
 
                 img_body = batch['img_body']
 
-                # batch_size, seqlen = batch.shape[:2]
                 batch_size = img_body.shape[0]
                 preds_dict, _ = model(batch)
 
@@ -535,6 +557,8 @@ if __name__ == '__main__':
                         help='batch size of person detection')
     parser.add_argument('--detection_threshold', type=float, default=0.55,
                         help='pifpaf detection score threshold.')
+    parser.add_argument('--single_person', action='store_true',
+                        help='only one person in the scene.')
     parser.add_argument('--cfg_file', type=str, default='configs/pymafx_config.yaml',
                         help='config file path.')
     parser.add_argument('--pretrained_model', default=None,

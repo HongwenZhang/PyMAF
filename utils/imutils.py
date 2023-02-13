@@ -4,6 +4,7 @@ This file contains functions that are used to perform data augmentation.
 from numpy.testing._private.utils import print_assert_equal
 import torch
 import numpy as np
+import scipy.misc
 import cv2
 import skimage.transform
 from PIL import Image
@@ -90,9 +91,11 @@ def crop(img, center, scale, res, rot=0):
 
     if not rot == 0:
         # Remove padding
+        # new_img = scipy.misc.imrotate(new_img, rot)
         new_img = skimage.transform.rotate(new_img, rot).astype(np.uint8)
         new_img = new_img[pad:-pad, pad:-pad]
 
+    # new_img_resized = scipy.misc.imresize(new_img, res)
     new_img_resized = np.array(Image.fromarray(new_img.astype(np.uint8)).resize(res))
     return new_img_resized, new_img, new_shape
 
@@ -118,7 +121,7 @@ def uncrop(img, center, scale, orig_shape, rot=0, is_rgb=True):
     # Range to sample from original image
     old_x = max(0, ul[0]), min(orig_shape[1], br[0])
     old_y = max(0, ul[1]), min(orig_shape[0], br[1])
-    img = np.array(Image.fromarray(img.astype(np.uint8)).resize(crop_shape))
+    img = scipy.misc.imresize(img, crop_shape, interp='nearest')
     new_img[old_y[0]:old_y[1], old_x[0]:old_x[1]] = img[new_y[0]:new_y[1], new_x[0]:new_x[1]]
     return new_img
 

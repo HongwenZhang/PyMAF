@@ -19,56 +19,9 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
-from .transformers.net_utils import PosEnSine
-from .transformers.transformer_basics import OurMultiheadAttention
-
 from utils.iuvmap import iuv_img2map, iuv_map2img, seg_img2map
 from .smpl import get_smpl_tpose
 from utils.imutils import j2d_processing
-
-
-class TransformerDecoderUnit(nn.Module):
-    def __init__(self, feat_dim, attri_dim=0, n_head=8, pos_en_flag=True, attn_type='softmax', P=None):
-        super(TransformerDecoderUnit, self).__init__()
-        self.feat_dim = feat_dim
-        self.attn_type = attn_type
-        self.pos_en_flag = pos_en_flag
-        self.P = P
-
-        assert attri_dim == 0
-        if self.pos_en_flag:
-            pe_dim = 10
-            self.pos_en = PosEnSine(pe_dim)
-        else:
-            pe_dim = 0
-        self.attn = OurMultiheadAttention(feat_dim+attri_dim+pe_dim*3, feat_dim+pe_dim*3, feat_dim, n_head)   # cross-attention
-
-        self.linear1 = nn.Conv2d(self.feat_dim, self.feat_dim, 1)
-        self.linear2 = nn.Conv2d(self.feat_dim, self.feat_dim, 1)
-        self.activation = nn.ReLU(inplace=True)
-
-        self.norm = nn.BatchNorm2d(self.feat_dim)
-
-    def forward(self, q, k, v, pos=None):
-        if self.pos_en_flag:
-            q_pos_embed = self.pos_en(q, pos)
-            k_pos_embed = self.pos_en(k)
-
-            q = torch.cat([q, q_pos_embed], dim=1)
-            k = torch.cat([k, k_pos_embed], dim=1)
-        # else:
-        #     q_pos_embed = 0
-        #     k_pos_embed = 0
-        
-        # cross-multi-head attention
-        out = self.attn(q=q, k=k, v=v, attn_type=self.attn_type, P=self.P)[0]
-
-        # feed forward
-        out2 = self.linear2(self.activation(self.linear1(out)))
-        out = out + out2
-        out = self.norm(out)
-
-        return out
 
 
 class Mesh_Sampler(nn.Module):
@@ -78,58 +31,65 @@ class Mesh_Sampler(nn.Module):
     def __init__(self, type='smpl', level=2, device=torch.device('cuda'), option=None):
         super().__init__()
 
-        # downsample SMPL mesh and assign part labels
-        if type == 'smpl':
-            # from https://github.com/nkolot/GraphCMR/blob/master/data/mesh_downsampling.npz
-            smpl_mesh_graph = np.load('data/smpl_downsampling.npz', allow_pickle=True, encoding='latin1')
+        self.model_type = type
+        if type == 'flame':
+            sampling_idx = torch.LongTensor(list(np.load('data/flame_downsampling.npy')))
+            self.register_buffer('sampling_idx', sampling_idx)
+        else:
+            # downsample SMPL mesh and assign part labels
+            if type == 'smpl':
+                # from https://github.com/nkolot/GraphCMR/blob/master/data/mesh_downsampling.npz
+                smpl_mesh_graph = np.load('data/smpl_downsampling.npz', allow_pickle=True, encoding='latin1')
 
-            A = smpl_mesh_graph['A']
-            U = smpl_mesh_graph['U']
-            D = smpl_mesh_graph['D'] # shape: (2,)
-        elif type == 'mano':
-            # from https://github.com/microsoft/MeshGraphormer/blob/main/src/modeling/data/mano_downsampling.npz
-            mano_mesh_graph = np.load('data/mano_downsampling.npz', allow_pickle=True, encoding='latin1')
+                A = smpl_mesh_graph['A']
+                U = smpl_mesh_graph['U']
+                D = smpl_mesh_graph['D'] # shape: (2,)
+            elif type == 'mano':
+                mano_mesh_graph = np.load('data/mano_downsampling.npz', allow_pickle=True, encoding='latin1')
 
-            A = mano_mesh_graph['A']
-            U = mano_mesh_graph['U']
-            D = mano_mesh_graph['D'] # shape: (2,)
+                A = mano_mesh_graph['A']
+                U = mano_mesh_graph['U']
+                D = mano_mesh_graph['D'] # shape: (2,)
 
-        # downsampling
-        ptD = []
-        for lv in range(len(D)):
-            d = scipy.sparse.coo_matrix(D[lv])
-            i = torch.LongTensor(np.array([d.row, d.col]))
-            v = torch.FloatTensor(d.data)
-            ptD.append(torch.sparse.FloatTensor(i, v, d.shape))
-        
-        # downsampling mapping from 6890 points to 431 points
-        # ptD[0].to_dense() - Size: [1723, 6890] , [195, 778]
-        # ptD[1].to_dense() - Size: [431, 1723] , [49, 195]
-        if level == 2:
-            Dmap = torch.matmul(ptD[1].to_dense(), ptD[0].to_dense()) # 6890 -> 431
-        elif level == 1:
-            Dmap = ptD[0].to_dense() # 
-        self.register_buffer('Dmap', Dmap)
+            # downsampling
+            ptD = []
+            for lv in range(len(D)):
+                d = scipy.sparse.coo_matrix(D[lv])
+                i = torch.LongTensor(np.array([d.row, d.col]))
+                v = torch.FloatTensor(d.data)
+                ptD.append(torch.sparse.FloatTensor(i, v, d.shape))
+            
+            # downsampling mapping from 6890 points to 431 points
+            # ptD[0].to_dense() - Size: [1723, 6890] , [195, 778]
+            # ptD[1].to_dense() - Size: [431, 1723] , [49, 195]
+            if level == 2:
+                Dmap = torch.matmul(ptD[1].to_dense(), ptD[0].to_dense()) # 6890 -> 431
+            elif level == 1:
+                Dmap = ptD[0].to_dense() # 
+            self.register_buffer('Dmap', Dmap)
 
-        # upsampling
-        ptU = []
-        for lv in range(len(U)):
-            d = scipy.sparse.coo_matrix(U[lv])
-            i = torch.LongTensor(np.array([d.row, d.col]))
-            v = torch.FloatTensor(d.data)
-            ptU.append(torch.sparse.FloatTensor(i, v, d.shape))
-        
-        # upsampling mapping from 431 points to 6890 points
-        # ptU[0].to_dense() - Size: [6890, 1723]
-        # ptU[1].to_dense() - Size: [1723, 431]
-        if level == 2:
-            Umap = torch.matmul(ptU[0].to_dense(), ptU[1].to_dense()) # 431 -> 6890
-        elif level == 1:
-            Umap = ptU[0].to_dense() # 
-        self.register_buffer('Umap', Umap)
+            # upsampling
+            ptU = []
+            for lv in range(len(U)):
+                d = scipy.sparse.coo_matrix(U[lv])
+                i = torch.LongTensor(np.array([d.row, d.col]))
+                v = torch.FloatTensor(d.data)
+                ptU.append(torch.sparse.FloatTensor(i, v, d.shape))
+            
+            # upsampling mapping from 431 points to 6890 points
+            # ptU[0].to_dense() - Size: [6890, 1723]
+            # ptU[1].to_dense() - Size: [1723, 431]
+            if level == 2:
+                Umap = torch.matmul(ptU[0].to_dense(), ptU[1].to_dense()) # 431 -> 6890
+            elif level == 1:
+                Umap = ptU[0].to_dense() # 
+            self.register_buffer('Umap', Umap)
 
     def downsample(self, x):
-        return torch.matmul(self.Dmap.unsqueeze(0), x) # [B, 431, 3]
+        if self.model_type == 'flame':
+            return x[:, self.sampling_idx].contiguous()
+        else:
+            return torch.matmul(self.Dmap.unsqueeze(0), x) # [B, 431, 3]
     
     def upsample(self, x):
         return torch.matmul(self.Umap.unsqueeze(0), x) # [B, 6890, 3]
@@ -233,8 +193,6 @@ class MAF_Extractor(nn.Module):
                 ).mean(dim=1)
 
         y = self.last_op(y)
-
-        # y = y.view(y.shape[0], -1)
 
         return y
 
