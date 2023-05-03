@@ -1,6 +1,6 @@
 🚩 **[Update]** The compatible EFT label files are now available [here](https://cloud.tsinghua.edu.cn/d/635c717375664cd6b3f5), which helps to train a much stronger HMR baseline. See [issue #58](https://github.com/HongwenZhang/PyMAF/issues/58).
 
-# PyMAF & PyMAF-X
+# PyMAF [ICCV'21 Oral] & PyMAF-X [TPAMI'23]
 This repository contains the code for the following papers:
 
 **PyMAF-X: Towards Well-aligned Full-body Model Regression from Monocular Images**  
