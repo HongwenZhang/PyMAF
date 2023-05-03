@@ -6,6 +6,8 @@
 
 [Hongwen Zhang](https://github.com/HongwenZhang) · [Yating Tian](https://github.com/tinatiansjz) · [Yuxiang Zhang](https://zhangyux15.github.io) · [Mengcheng Li](https://github.com/Dw1010) · [Liang An](https://anl13.github.io) · [Zhenan Sun](http://www.cbsr.ia.ac.cn/users/znsun) · [Yebin Liu](https://www.liuyebin.com)
 
+## TPAMI 2023
+
 ### [Project Page](https://www.liuyebin.com/pymaf-x) | [Video](https://www.bilibili.com/video/BV1pN4y1T7dY) | [Paper](https://arxiv.org/abs/2207.06400)
 
 </div>
@@ -112,11 +114,11 @@ Results will be saved at `./output`. You can set different hyperparamters in the
 ## Citation
 If this work is helpful in your research, please cite the following papers.
 ```
-@article{pymafx2022,
+@article{pymafx2023,
   title={PyMAF-X: Towards Well-aligned Full-body Model Regression from Monocular Images},
   author={Zhang, Hongwen and Tian, Yating and Zhang, Yuxiang and Li, Mengcheng and An, Liang and Sun, Zhenan and Liu, Yebin},
-  journal={arXiv preprint arXiv:2207.06400},
-  year={2022}
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  year={2023}
 }
 
 @inproceedings{pymaf2021,
