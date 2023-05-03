@@ -6,7 +6,7 @@ This repository contains the code for the following papers:
 **PyMAF-X: Towards Well-aligned Full-body Model Regression from Monocular Images**  
 Hongwen Zhang, Yating Tian, Yuxiang Zhang, Mengcheng Li, Liang An, Zhenan Sun, Yebin Liu 
 
-arXiv, 2022
+TPAMI, 2023
 
 [[Project Page]](https://www.liuyebin.com/pymaf-x) [[Paper]](https://arxiv.org/pdf/2207.06400.pdf) [[Code: smplx branch]](https://github.com/HongwenZhang/PyMAF/tree/smplx)
 
@@ -172,11 +172,11 @@ If this work is helpful in your research, please cite the following paper.
   year={2021}
 }
 
-@article{pymafx2022,
+@article{pymafx2023,
   title={PyMAF-X: Towards Well-aligned Full-body Model Regression from Monocular Images},
   author={Zhang, Hongwen and Tian, Yating and Zhang, Yuxiang and Li, Mengcheng and An, Liang and Sun, Zhenan and Liu, Yebin},
-  journal={arXiv preprint arXiv:2207.06400},
-  year={2022}
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  year={2023}
 }
 ```
 
