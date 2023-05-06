@@ -20,3 +20,4 @@ torchgeometry
 git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI
 git+https://github.com/mkocabas/yolov3-pytorch.git
 git+https://github.com/mkocabas/multi-person-tracker.git
+ultralytics==8.0.24
