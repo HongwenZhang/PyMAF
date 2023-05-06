@@ -26,6 +26,7 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 from multi_person_tracker import MPT
+from multi_person_tracker_yolov8 import MPT8
 from torch.utils.data import DataLoader
 import os.path as osp
 from matplotlib.image import imsave
@@ -73,7 +74,7 @@ def process_image(img_file, input_res=224):
 
 def run_image_demo(args):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    
+
     # ========= Define model ========= #
     if args.regressor == 'hmr-spin':
         model = hmr(path_config.SMPL_MEAN_PARAMS).to(device)
@@ -128,7 +129,7 @@ def run_image_demo(args):
     aroundy = cv2.Rodrigues(np.array([0, np.radians(90.), 0]))[0]
     center = pred_vertices.mean(axis=0)
     rot_vertices = np.dot((pred_vertices - center), aroundy) + center
-    
+
     # Render side-view shape
     img_shape_side = renderer(
                         rot_vertices,
@@ -144,10 +145,10 @@ def run_image_demo(args):
 
     img_name = os.path.basename(args.img_file).split('.')[0]
     save_name = os.path.join(output_path, img_name)
-    
+
     cv2.imwrite(save_name + '_smpl.png', img_shape)
     cv2.imwrite(save_name + '_smpl_side.png', img_shape_side)
-    
+
     print(f'Saved the result image to {output_path}.')
 
 
@@ -169,7 +170,7 @@ def run_video_demo(args):
 
         if not os.path.isfile(video_file):
             exit(f'Input video \"{video_file}\" does not exist!')
-        
+
         output_path = os.path.join(args.output_folder, os.path.basename(video_file).replace('.mp4', ''))
 
         image_folder, num_frames, img_shape = video_to_images(video_file, return_info=True)
@@ -220,15 +221,20 @@ def run_video_demo(args):
                 video_file = os.path.join(os.getcwd(), video_file)
             tracking_results = run_posetracker(video_file, staf_folder=args.staf_dir, display=args.display)
         else:
-            # run multi object tracker
-            mot = MPT(
-                device=device,
-                batch_size=args.tracker_batch_size,
-                display=args.display,
-                detector_type=args.detector,
-                output_format='dict',
-                yolo_img_size=args.yolo_img_size,
-            )
+            if args.detector in ['yolo', 'yolov3']:
+                # run multi object tracker
+                mot = MPT(
+                    device=device,
+                    batch_size=args.tracker_batch_size,
+                    display=args.display,
+                    detector_type='yolo',
+                    output_format='dict',
+                    # yolo_img_size=args.yolo_img_size,
+                    yolo_img_size=704,
+                    detection_threshold=.1,
+                )
+            elif args.detector == 'yolov8':
+                mot = MPT8()
             tracking_results = mot(image_folder)
 
     # remove tracklets if num_frames is less than MIN_NUM_FRAMES
@@ -429,7 +435,7 @@ def run_video_demo(args):
 
             if args.sideview:
                 side_img = np.zeros_like(img)
-            
+
             if args.empty_bg:
                 empty_img = np.zeros_like(img)
 
@@ -519,7 +525,7 @@ if __name__ == '__main__':
                         help='output folder to write results')
     parser.add_argument('--tracking_method', type=str, default='bbox', choices=['bbox', 'pose'],
                         help='tracking method to calculate the tracklet of a subject from the input video')
-    parser.add_argument('--detector', type=str, default='yolo', choices=['yolo', 'maskrcnn'],
+    parser.add_argument('--detector', type=str, default='yolo', choices=['yolo', 'maskrcnn', 'yolov3', 'yolov8'],
                         help='object detector to be used for bbox tracking')
     parser.add_argument('--yolo_img_size', type=int, default=416,
                         help='input image size for yolo detector')
@@ -527,7 +533,7 @@ if __name__ == '__main__':
                         help='batch size of object detector used for bbox tracking')
     parser.add_argument('--staf_dir', type=str, default='/home/jd/Projects/2D/STAF',
                         help='path to directory STAF pose tracking method.')
-    parser.add_argument('--regressor', type=str, default='pymaf_net', 
+    parser.add_argument('--regressor', type=str, default='pymaf_net',
                         help='Name of the SMPL regressor.')
     parser.add_argument('--cfg_file', type=str, default='configs/pymaf_config.yaml',
                         help='config file path.')
