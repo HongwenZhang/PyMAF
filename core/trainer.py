@@ -30,7 +30,7 @@ from utils.pose_utils import compute_similarity_transform_batch
 from utils.geometry import batch_rodrigues, projection, perspective_projection, estimate_translation, rot6d_to_rotmat, rotation_matrix_to_angle_axis
 
 from core import path_config, constants
-from .fits_dict import FitsDict, HandFaceFitsDict
+# from .fits_dict import FitsDict, HandFaceFitsDict
 from .cfgs import cfg
 from utils.train_utils import print_args
 from utils.iuvmap import iuv_img2map, iuv_map2img, seg_img2map
