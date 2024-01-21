@@ -111,6 +111,14 @@ python -m apps.demo_smplx --vid_file examples/dancer_short.mp4 --pretrained_mode
 
 Results will be saved at `./output`. You can set different hyperparamters in the scripts, e.g., `--detection_threshold` for the person detection threshold and `MODEL.PyMAF.HAND_VIS_TH` for the hand visibility threshold.
 
+## Training
+
+To perform training, we need to collect preprocessed files of training datasets first. The pseudo SMPL-X labels (with keys of 'xpose'/'xshape') can be downloaded at [here](https://cloud.tsinghua.edu.cn/d/a661f9acb537465fbc8d). Please also refer to [PyMAF](https://github.com/HongwenZhang/PyMAF#training) for more details about training. Example usage:
+```
+python -m apps.train --regressor pymaf_net --train_data h36m_coco_itw --eval_every 10 --save_every 20 --train_data h36m_coco_itw --misc TRAIN.BATCH_SIZE 64 MODEL.PyMAF.AUX_SUPV_ON True MODEL.PyMAF.TRANS.USE_ATT True MODEL.PyMAF.TRANS.ATT_HEAD 1 MODEL.PyMAF.TRANS.ATT_FEAT_IDX 2 MODEL.MESH_MODEL smplx TRAIN.USE_EFT True MODEL.PyMAF.USE_CAM_FEAT True LOSS.SHAPE_W 0.6 MODEL.PyMAF.BACKBONE res50 POSE_RES_MODEL.PRETR_SET coco
+```
+
+
 ## Citation
 If this work is helpful in your research, please cite the following papers.
 ```
