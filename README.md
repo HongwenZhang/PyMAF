@@ -8,7 +8,8 @@ Hongwen Zhang, Yating Tian, Yuxiang Zhang, Mengcheng Li, Liang An, Zhenan Sun, Y
 
 TPAMI, 2023
 
-[[Project Page]](https://www.liuyebin.com/pymaf-x) [[Paper]](https://arxiv.org/pdf/2207.06400.pdf) [[Code: smplx branch]](https://github.com/HongwenZhang/PyMAF/tree/smplx)
+[[Project Page]](https://zhanghongwen.cn/pymaf-x) [[Paper]](https://arxiv.org/pdf/2207.06400.pdf) [[Code: smplx branch]](https://github.com/HongwenZhang/PyMAF/tree/smplx)
+[![Papers with Code: #2 on AGORA Test (SMPL-X Whole-Body)](https://paperswithcode.co/api/v1/papers/2207.06400/leaderboard-badge.svg?eval=15596&live=1)](https://paperswithcode.co/api/v1/papers/2207.06400/leaderboard-badge-link?eval=15596)
 
 **PyMAF: 3D Human Pose and Shape Regression with Pyramidal Mesh Alignment Feedback Loop**  
 Hongwen Zhang*, Yating Tian*, Xinchi Zhou, Wanli Ouyang, Yebin Liu, Limin Wang, Zhenan Sun 
